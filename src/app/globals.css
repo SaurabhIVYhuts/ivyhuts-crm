@@ -1,26 +1,98 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * IVYHUTS CRM design system — a single, deliberate dark SaaS theme (not a
+ * light/dark toggle). Every color used anywhere in the app should trace
+ * back to one of these tokens so the product reads as one coherent system
+ * rather than a collection of independently-styled pages.
+ * ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #0b0d10;
+  --sidebar: #0f1115;
+  --surface: #13161b;
+  --surface-2: #171a20;
+  --surface-hover: #1a1e25;
+  --line: #252a32;
+  --line-soft: #1b1f26;
+
+  --ink: #f5f7fa;
+  --subtle: #9aa3b2;
+  --faint: #687180;
+
+  --accent: #4f7cff;
+  --accent-strong: #6f97ff;
+  --accent-soft: #17233f;
+
+  --success: #22c55e;
+  --success-soft: #122318;
+  --warning: #f59e0b;
+  --warning-soft: #241c0c;
+  --danger: #ef4444;
+  --danger-soft: #2a1414;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-sidebar: var(--sidebar);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+
+  --color-ink: var(--ink);
+  --color-subtle: var(--subtle);
+  --color-faint: var(--faint);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+/* Thin, unobtrusive scrollbars that fit a dark SaaS shell instead of the
+   platform default light track/thumb. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

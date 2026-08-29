@@ -32,6 +32,16 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# CRM Milestone 18 — .env.example carries no secrets (placeholder values
+# only, see the file itself) and exists specifically to be committed so a
+# fresh checkout knows which variables a deployment needs. Without this
+# negation, the blanket `.env*` rule above silently swallows it too — it
+# would never be picked up by `git add .` and would need an explicit
+# `git add -f` every time, easy to miss. The ivyhuts-website backend repo's
+# own .env.example only stays tracked today because it was committed before
+# a same-shaped rule started applying to it; this makes the CRM's exception
+# explicit instead of relying on that same accident.
+!.env.example
 
 # vercel
 .vercel
