@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { ToastProvider } from "@/components/ui/Toast";
+import { IvyAssistant } from "@/components/IvyAssistant";
 import { useAuth } from "@/hooks/useAuth";
 import { INTERNAL_ROLES } from "@/types/auth";
 
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
+      <IvyAssistant />
     </ToastProvider>
   );
 }
