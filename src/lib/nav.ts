@@ -7,7 +7,6 @@ import {
   UserRound,
   PhoneCall,
   CalendarClock,
-  Presentation,
   MessageSquare,
   Users2,
   BarChart3,
@@ -28,11 +27,10 @@ export interface NavGroup {
 }
 
 // `href: null` means the feature has no dedicated cross-lead page yet in
-// this backend (e.g. there is no "list every presentation across every
+// this backend (e.g. there is no "list every communication across every
 // lead" endpoint) — rendered as a clearly, calmly disabled item rather than
 // a route that would 404 or show fabricated data. Real per-lead
-// Presentations/Communications remain fully available from within a Lead's
-// own detail page.
+// Communications remain fully available from within a Lead's own detail page.
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Workspace",
@@ -42,7 +40,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Customers", icon: UserRound, href: null },
       { label: "Follow-ups", icon: PhoneCall, href: "/dashboard/follow-ups" },
       { label: "Meetings", icon: CalendarClock, href: "/dashboard/meetings" },
-      { label: "Presentations", icon: Presentation, href: null },
       { label: "Communications", icon: MessageSquare, href: null },
     ],
   },

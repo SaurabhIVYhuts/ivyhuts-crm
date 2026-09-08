@@ -24,8 +24,8 @@ const TEMPLATES: Template[] = [
     build: (name) => `${name ? `Hi ${name},` : "Hi,"} this is your IVYHUTS accommodation advisor. I'm here to help you find the right place to stay for your studies. Let me know if you have any questions!`,
   },
   {
-    label: "Presentation ready",
-    build: (name) => `${name ? `Hi ${name},` : "Hi,"} I've prepared a personalized accommodation comparison based on what we discussed. I'll walk you through the options on our call.`,
+    label: "Options ready",
+    build: (name) => `${name ? `Hi ${name},` : "Hi,"} I've put together a shortlist of accommodation options based on what we discussed. I'll walk you through them on our call.`,
   },
   {
     label: "Follow-up",

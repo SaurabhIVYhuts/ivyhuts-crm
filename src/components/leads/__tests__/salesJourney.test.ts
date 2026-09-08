@@ -63,7 +63,6 @@ describe("buildStages — a brand-new lead", () => {
     expect(stages.meeting).toBe(false);
     expect(stages.requirements).toBe(false);
     expect(stages.curated).toBe(false);
-    expect(stages.presentation).toBe(false);
     expect(stages.followUp).toBe(false);
     expect(stages.conversion).toBe(false);
   });
@@ -85,16 +84,16 @@ describe("buildStages — activity vs stage completion (Milestone 23.11 Part 8)"
     expect(stages.requirements).toBe(false);
   });
 
-  it("hasReadyPresentation never implies conversion or follow-up happened", () => {
-    const stages = stageMap(makeLead({ journey: { hasReadyPresentation: true } }));
-    expect(stages.presentation).toBe(true);
+  it("hasCuratedProperties never implies conversion or follow-up happened", () => {
+    const stages = stageMap(makeLead({ journey: { hasCuratedProperties: true } }));
+    expect(stages.curated).toBe(true);
     expect(stages.followUp).toBe(false);
     expect(stages.conversion).toBe(false);
   });
 });
 
 describe("buildStages — meeting is optional, never a blocker", () => {
-  it("a lead can reach Requirements/Curated/Presentation with the Meeting stage still incomplete", () => {
+  it("a lead can reach Requirements/Curated with the Meeting stage still incomplete", () => {
     const stages = stageMap(
       makeLead({
         journey: {
@@ -103,14 +102,12 @@ describe("buildStages — meeting is optional, never a blocker", () => {
           hasCompletedMeeting: false,
           hasConfirmedRequirements: true,
           hasCuratedProperties: true,
-          hasReadyPresentation: true,
         },
       })
     );
     expect(stages.meeting).toBe(false);
     expect(stages.requirements).toBe(true);
     expect(stages.curated).toBe(true);
-    expect(stages.presentation).toBe(true);
   });
 });
 
@@ -213,7 +210,7 @@ describe("deriveNextAction — Milestone 23.12 Part 6", () => {
     expect(action?.label).toBe("Find and curate accommodation");
   });
 
-  it("matches the milestone's own worked example: everything through presentation done -> 'Follow up with the student'", () => {
+  it("matches the milestone's own worked example: everything through the curated shortlist done -> 'Follow up with the student'", () => {
     const action = deriveNextAction(
       makeLead({
         journey: {
@@ -222,7 +219,6 @@ describe("deriveNextAction — Milestone 23.12 Part 6", () => {
           hasCompletedMeeting: true,
           hasConfirmedRequirements: true,
           hasCuratedProperties: true,
-          hasReadyPresentation: true,
         },
       })
     );

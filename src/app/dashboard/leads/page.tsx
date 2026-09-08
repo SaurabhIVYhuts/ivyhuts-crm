@@ -57,7 +57,6 @@ const PRIORITY_PILLS: Array<{ label: string; value: WorkQueueBucket }> = [
   { label: "New", value: "new" },
   { label: "Needs Requirements", value: "discoveryIncomplete" },
   { label: "Ready for Find Rooms", value: "readyForFindRooms" },
-  { label: "Presentation, No Follow-up", value: "presentationNoFollowUp" },
   { label: "Upcoming", value: "upcoming" },
   { label: "Nurturing", value: "nurturing" },
   { label: "No Next Action", value: "noNextAction" },

@@ -38,23 +38,22 @@ function SaveStatusIndicator({ saveState, hasUnsavedChanges }: { saveState: Shor
   return null;
 }
 
-// Presentation handoff — Milestone 23.5 Part 24 / 23.6 Part 19 / 23.8. The
-// actual "Generate Presentation" action lives ONLY in the Presentation
-// section further down the lead page (PresentationsSection.tsx, backed by a
-// real POST /api/leads/:id/presentations) — never duplicated here, so there
-// is exactly one place an agent generates a deck from, not two competing
-// buttons. This stays a pointer, not a second entry point.
-function PresentationHandoff({ shortlistCount, isSaved }: { shortlistCount: number; isSaved: boolean }) {
+// Shortlist status — a saved, non-empty curated shortlist is the last step
+// of Find Rooms. The next real actions (record contact, schedule a
+// follow-up) live in the Communication History / Follow-ups sections
+// further down the lead page; this stays a status line, not a second entry
+// point into them.
+function ShortlistStatus({ shortlistCount, isSaved }: { shortlistCount: number; isSaved: boolean }) {
   return (
  <div className="rounded-md border border-dashed border-line p-3 text-sm dark:border-line">
       {isSaved ? (
  <p className="flex items-center gap-1.5 font-medium text-success dark:text-success">
  <CheckCircle2 className="h-4 w-4" />
-          Shortlist saved — head to the Presentation section below to generate a deck from these options.
+          Shortlist saved — {shortlistCount} {shortlistCount === 1 ? "property" : "properties"}. Follow up with the student from the sections below.
         </p>
       ) : (
  <p className="font-medium text-subtle dark:text-subtle">
-          Shortlist ready — {shortlistCount} {shortlistCount === 1 ? "property" : "properties"}. Save it to generate a presentation from the Presentation section below.
+          Shortlist ready — {shortlistCount} {shortlistCount === 1 ? "property" : "properties"}. Save it to lock in these options for this lead.
         </p>
       )}
     </div>
@@ -242,7 +241,7 @@ export function ShortlistPanel({
           </button>
 
  <div className="mt-3">
-            <PresentationHandoff shortlistCount={shortlist.length} isSaved={hasEverSaved && !hasUnsavedChanges} />
+            <ShortlistStatus shortlistCount={shortlist.length} isSaved={hasEverSaved && !hasUnsavedChanges} />
           </div>
         </>
       )}

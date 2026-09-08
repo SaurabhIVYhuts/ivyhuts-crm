@@ -34,18 +34,17 @@ export function deriveAwaitingReplies(leads: WorkQueueLead[]): WorkQueueLead[] {
 }
 
 // Combines overdue follow-ups, unanswered replies, today's meetings/
-// follow-ups, brand-new leads, and (Milestone 23.12) the three pipeline-gap
-// signals the backend now computes (discoveryIncomplete/readyForFindRooms/
-// presentationNoFollowUp) into one deterministic priority-ordered list —
-// same priority order as BUCKET_SORT_RANK in api/leads/work-queue.js, with
-// "replied" (a frontend-only signal — see isAwaitingReply — the backend has
-// no bucket for it) slotted in right after overdue, matching this
-// component's own pre-existing worked example. No AI, no scoring model:
-// just the backend's own `bucket` field plus the one reply signal, merged
-// and de-duplicated.
+// follow-ups, brand-new leads, and (Milestone 23.12) the pipeline-gap
+// signals the backend computes (discoveryIncomplete/readyForFindRooms) into
+// one deterministic priority-ordered list — same priority order as
+// BUCKET_SORT_RANK in api/leads/work-queue.js, with "replied" (a
+// frontend-only signal — see isAwaitingReply — the backend has no bucket
+// for it) slotted in right after overdue, matching this component's own
+// pre-existing worked example. No AI, no scoring model: just the backend's
+// own `bucket` field plus the one reply signal, merged and de-duplicated.
 export interface PriorityItem {
   lead: WorkQueueLead;
-  reason: "overdue" | "replied" | "meetingToday" | "today" | "new" | "discoveryIncomplete" | "readyForFindRooms" | "presentationNoFollowUp";
+  reason: "overdue" | "replied" | "meetingToday" | "today" | "new" | "discoveryIncomplete" | "readyForFindRooms";
 }
 
 export function derivePriorityQueue(leads: WorkQueueLead[], limit = 5): PriorityItem[] {
@@ -57,7 +56,6 @@ export function derivePriorityQueue(leads: WorkQueueLead[], limit = 5): Priority
     { reason: "new", items: leads.filter((l) => l.bucket === "new") },
     { reason: "discoveryIncomplete", items: leads.filter((l) => l.bucket === "discoveryIncomplete") },
     { reason: "readyForFindRooms", items: leads.filter((l) => l.bucket === "readyForFindRooms") },
-    { reason: "presentationNoFollowUp", items: leads.filter((l) => l.bucket === "presentationNoFollowUp") },
   ];
 
   const seen = new Set<string>();
@@ -89,8 +87,6 @@ function reasonLabel(item: PriorityItem): { label: string; time: string } {
       return { label: "Requirements not confirmed", time: "—" };
     case "readyForFindRooms":
       return { label: "Ready for Find Rooms", time: "—" };
-    case "presentationNoFollowUp":
-      return { label: "Presentation generated — needs follow-up", time: "—" };
   }
 }
 

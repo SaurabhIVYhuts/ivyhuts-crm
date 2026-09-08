@@ -25,7 +25,6 @@ import { SalesJourney } from "@/components/leads/SalesJourney";
 import { MeetingsSection } from "@/components/meetings/MeetingsSection";
 import { DiscoverySection } from "@/components/discovery/DiscoverySection";
 import { FindRoomsSection } from "@/components/find-rooms/FindRoomsSection";
-import { PresentationsSection } from "@/components/presentations/PresentationsSection";
 import { CommunicationsSection } from "@/components/communications/CommunicationsSection";
 import { FollowUpsSection } from "@/components/follow-ups/FollowUpsSection";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -302,10 +301,6 @@ export default function LeadDetailPage() {
 
               <Section title="Find Rooms" id="find-rooms">
                 <FindRoomsSection leadId={lead.id} />
-              </Section>
-
-              <Section title="Presentation" id="presentation">
-                <PresentationsSection leadId={lead.id} />
               </Section>
 
               <Section title="Communication History" id="communications">

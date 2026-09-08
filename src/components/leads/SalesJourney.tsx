@@ -8,8 +8,8 @@ import type { LeadDetail } from "@/types/lead";
 // no new status/stage enum anywhere, in the database or otherwise. Every
 // stage below is computed from data that already happened
 // (LeadDetail.journey, itself computed server-side from real Meeting/
-// Discovery/AccommodationCuration/Presentation/Communication/FollowUp
-// records — see api/leads/[id].js's buildJourneyFlags) or from
+// Discovery/AccommodationCuration/Communication/FollowUp records — see
+// api/leads/[id].js's buildJourneyFlags) or from
 // `lead.status` directly. Nothing here is inferred from "the section was
 // opened" or any other proxy for actual progress.
 export interface Stage {
@@ -82,10 +82,6 @@ export function buildStages(lead: LeadDetail): Stage[] {
     // of "rooms were searched" separate from a saved, non-empty curated
     // shortlist. This stage represents both together, honestly.
     { id: "curated", label: "Rooms Searched & Curated", complete: j.hasCuratedProperties, anchor: "find-rooms" },
-    // Only a READY presentation counts — GENERATING/FAILED never do. This
-    // means "generated", not "the customer received it" — nothing in this
-    // system records a send-confirmation event.
-    { id: "presentation", label: "Presentation Generated", complete: j.hasReadyPresentation, anchor: "presentation" },
     // At least one meaningful FollowUp, pending or completed — the
     // sub-label distinguishes "still scheduled" from "done, nothing
     // pending right now", without that distinction affecting whether the
@@ -146,8 +142,7 @@ const NEXT_ACTION_COPY: Record<string, { label: string; description: string }> =
   meeting: { label: "Schedule a meeting", description: "Optional — helps confirm requirements faster, but Discovery can proceed without one." },
   requirements: { label: "Confirm requirements", description: "University, budget, and sharing still need to be confirmed in Discovery." },
   curated: { label: "Find and curate accommodation", description: "Requirements are confirmed — search Find Rooms and save a shortlist." },
-  presentation: { label: "Generate a presentation", description: "A curated shortlist is saved — generate a presentation to share with the student." },
-  followUp: { label: "Follow up with the student", description: "A presentation has been generated — record contact and schedule the next follow-up." },
+  followUp: { label: "Follow up with the student", description: "A curated shortlist is saved — record contact and schedule the next follow-up." },
   conversion: { label: "Decide: converted or lost", description: "Everything else is done — update this lead's status once the outcome is known." },
 };
 
@@ -179,8 +174,8 @@ export function deriveNextAction(lead: LeadDetail): NextAction | null {
 
 // One or two contextual shortcut buttons per stage — every one just scrolls
 // to the section that already has the real form/action (no duplicated
-// forms, no new modals). Some stages offer two relevant next steps (e.g.
-// "presentation generated" naturally leads to both recording contact AND
+// forms, no new modals). Some stages offer two relevant next steps (e.g. a
+// saved curated shortlist naturally leads to both recording contact AND
 // scheduling the follow-up — Milestone 23.12 Part 8/9's own worked
 // examples show exactly this pairing).
 const NEXT_ACTION_BUTTONS: Record<string, Array<{ label: string; anchor: string }>> = {
@@ -189,7 +184,6 @@ const NEXT_ACTION_BUTTONS: Record<string, Array<{ label: string; anchor: string 
   meeting: [{ label: "Schedule Meeting", anchor: "meeting" }],
   requirements: [{ label: "Open Discovery", anchor: "discovery" }],
   curated: [{ label: "Find Rooms", anchor: "find-rooms" }],
-  presentation: [{ label: "Generate Presentation", anchor: "presentation" }],
   followUp: [
     { label: "Record Communication", anchor: "communications" },
     { label: "Create Follow-up", anchor: "follow-ups" },

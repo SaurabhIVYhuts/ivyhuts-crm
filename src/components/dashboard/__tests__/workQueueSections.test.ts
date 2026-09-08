@@ -64,13 +64,12 @@ describe("derivePriorityQueue — Milestone 23.12 priority order", () => {
     expect(result[0].reason).toBe("meetingToday");
   });
 
-  it("the three new pipeline-gap buckets (discoveryIncomplete/readyForFindRooms/presentationNoFollowUp) are surfaced, in that order", () => {
-    const presentationGap = makeLead({ id: "p", bucket: "presentationNoFollowUp" });
+  it("the pipeline-gap buckets (discoveryIncomplete/readyForFindRooms) are surfaced, in that order", () => {
     const findRoomsGap = makeLead({ id: "f", bucket: "readyForFindRooms" });
     const discoveryGap = makeLead({ id: "d", bucket: "discoveryIncomplete" });
-    const result = derivePriorityQueue([presentationGap, findRoomsGap, discoveryGap], 5);
-    expect(result.map((r) => r.lead.id)).toEqual(["d", "f", "p"]);
-    expect(result.map((r) => r.reason)).toEqual(["discoveryIncomplete", "readyForFindRooms", "presentationNoFollowUp"]);
+    const result = derivePriorityQueue([findRoomsGap, discoveryGap], 5);
+    expect(result.map((r) => r.lead.id)).toEqual(["d", "f"]);
+    expect(result.map((r) => r.reason)).toEqual(["discoveryIncomplete", "readyForFindRooms"]);
   });
 
   it("a customer reply is treated as close to as urgent as overdue — ahead of meetingToday/today/new", () => {

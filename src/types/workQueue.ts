@@ -14,16 +14,22 @@ import type { PaginationMeta } from "./api";
 // the `bucket` filter param mean.
 //
 // Milestone 23.12 — extended from the original 6 (overdue/today/new/
-// upcoming/nurturing/noNextAction) with 4 real, backend-derived pipeline
+// upcoming/nurturing/noNextAction) with real, backend-derived pipeline
 // signals. Priority order (matches BUCKET_SORT_RANK in
 // api/leads/work-queue.js exactly):
 //   overdue > meetingToday > today > new > discoveryIncomplete >
 //   readyForFindRooms > presentationNoFollowUp > upcoming > nurturing >
 //   noNextAction
-// discoveryIncomplete/readyForFindRooms/presentationNoFollowUp only ever
-// apply to leads still being actively worked (status contacted/qualified)
-// — never nurturing or converted/lost, so a parked or closed lead never
-// wrongly resurfaces as "needs attention" (see that route's own comment).
+// discoveryIncomplete/readyForFindRooms only ever apply to leads still
+// being actively worked (status contacted/qualified) — never nurturing or
+// converted/lost, so a parked or closed lead never wrongly resurfaces as
+// "needs attention" (see that route's own comment).
+//
+// `presentationNoFollowUp` is DEPRECATED with the removal of the
+// Presentation feature (CRM plan item 4) — the CRM no longer surfaces it as
+// a pill or priority-queue reason. It's kept in this union/summary only
+// because api/leads/work-queue.js still emits it; drop it here once the
+// backend bucket is removed in lock-step.
 export const WORK_QUEUE_BUCKETS = [
   "overdue",
   "meetingToday",

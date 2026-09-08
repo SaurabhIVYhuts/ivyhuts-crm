@@ -58,7 +58,6 @@ describe("STRUCTURAL: no Amber anywhere in the Communication/Follow-up/Journey w
     "components/follow-ups/NextActionCard.tsx",
     "components/leads/SalesJourney.tsx",
     "components/dashboard/WorkQueueSections.tsx",
-    "components/presentations/PresentationsSection.tsx",
     "types/workQueue.ts",
     "app/dashboard/page.tsx",
     "app/dashboard/leads/page.tsx",
