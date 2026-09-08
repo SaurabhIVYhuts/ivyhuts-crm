@@ -1,7 +1,9 @@
-// The 4 real, canonical accommodation sources — Amber is deliberately not
-// one of these (see sourceLabel below for how a historical Amber-sourced
-// record is still displayed, read-only).
-export const PROPERTY_SOURCES = ["uhomes", "uniacco", "university_living", "gradding_homes"] as const;
+// The 4 real, canonical accommodation sources, plus "other" — a link an
+// agent pasted from a site outside that set (CRM plan item 7). Amber is
+// deliberately not one of these (see sourceLabel below for how a
+// historical Amber-sourced record is still displayed, read-only). Kept in
+// sync with AccommodationCuration.PROVIDERS on the backend.
+export const PROPERTY_SOURCES = ["uhomes", "uniacco", "university_living", "gradding_homes", "other"] as const;
 export type PropertySource = (typeof PROPERTY_SOURCES)[number];
 
 export const PROPERTY_SOURCE_LABELS: Record<PropertySource, string> = {
@@ -9,6 +11,7 @@ export const PROPERTY_SOURCE_LABELS: Record<PropertySource, string> = {
   uniacco: "UniAcco",
   university_living: "University Living",
   gradding_homes: "Gradding Homes",
+  other: "Other",
 };
 
 // Historical Competitive Analysis records saved before this milestone may

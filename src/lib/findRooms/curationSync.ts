@@ -78,7 +78,11 @@ export function shortlistToCurationInput(
 
 function curatedPropertyToCanonical(property: CuratedProperty): CanonicalProperty {
   return {
-    provider: property.provider,
+    // A curated property's provider is the wider PropertySource set (it can
+    // be "other" — a pasted link, CRM plan item 7). CanonicalProperty is
+    // the search layer's 4-provider shape; "other" simply isn't one the
+    // search UI's provider filter matches, so it lists under "All".
+    provider: property.provider as CanonicalProperty["provider"],
     providerPropertyId: property.providerPropertyId,
     propertyId: property.propertyId,
     name: property.name,

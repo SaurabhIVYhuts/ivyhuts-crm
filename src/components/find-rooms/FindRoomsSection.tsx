@@ -33,8 +33,12 @@ import { searchFindRooms } from "@/lib/api/properties";
 import { getAccommodationCuration, saveAccommodationCuration } from "@/lib/api/accommodationCuration";
 import type { ResolvedUniversity } from "@/types/university";
 import type { Discovery } from "@/types/discovery";
-import type { FindRoomsSearchCriteria, FindRoomsSearchResult, PropertySource } from "@/types/property";
-import { PROPERTY_SOURCES, PROPERTY_SOURCE_LABELS } from "@/types/property";
+import type { FindRoomsSearchCriteria, FindRoomsSearchResult } from "@/types/property";
+import { PROPERTY_SOURCE_LABELS } from "@/types/property";
+// The provider filter is over SEARCH results, which only ever come from the
+// four real providers — never "other" (a pasted-link source, CRM plan
+// item 7). So the pills iterate the strict search-provider set.
+import { PROPERTY_PROVIDERS, type PropertyProvider } from "@/lib/property-intelligence";
 import type { CriteriaSnapshot } from "@/types/accommodationCuration";
 import { deriveFindRoomsRequirements } from "@/lib/findRooms/requirements";
 import { BLANK_FIND_ROOMS_FILTERS, buildFindRoomsCriteria, type FindRoomsFilters } from "@/lib/findRooms/buildCriteria";
@@ -97,7 +101,7 @@ export function FindRoomsSection({ leadId }: { leadId: string }) {
   // search.
   const [lastSearchedFullCriteria, setLastSearchedFullCriteria] = useState<FindRoomsSearchCriteria | null>(null);
 
-  const [providerFilter, setProviderFilter] = useState<PropertySource | "all">("all");
+  const [providerFilter, setProviderFilter] = useState<PropertyProvider | "all">("all");
   const [sortBy, setSortBy] = useState<SortOption>("recommended");
 
   const [shortlist, dispatch] = useReducer(shortlistReducer, []);
@@ -339,7 +343,7 @@ export function FindRoomsSection({ leadId }: { leadId: string }) {
                   >
                     All
                   </button>
-                  {PROPERTY_SOURCES.map((source) => (
+                  {PROPERTY_PROVIDERS.map((source) => (
                     <button
                       key={source}
                       type="button"

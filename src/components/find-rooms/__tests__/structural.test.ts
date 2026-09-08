@@ -82,9 +82,9 @@ describe("STRUCTURAL: no Amber in the Find Rooms workflow", () => {
   });
 });
 
-describe("STRUCTURAL: exactly four providers, in sync with the real backend registry", () => {
-  it("PROPERTY_SOURCES is exactly uhomes/uniacco/university_living/gradding_homes", () => {
-    expect([...PROPERTY_SOURCES].sort()).toEqual(["gradding_homes", "uhomes", "uniacco", "university_living"]);
+describe("STRUCTURAL: the four real providers plus 'other', in sync with the real backend registry", () => {
+  it("PROPERTY_SOURCES is the four real providers plus 'other' (CRM plan item 7 — pasted links)", () => {
+    expect([...PROPERTY_SOURCES].sort()).toEqual(["gradding_homes", "other", "uhomes", "uniacco", "university_living"]);
   });
 
   it("PROPERTY_SOURCES never contains amber", () => {
