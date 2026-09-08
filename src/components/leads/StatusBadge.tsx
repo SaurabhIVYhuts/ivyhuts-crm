@@ -8,8 +8,8 @@ import { formatLabel } from "@/lib/utils/format";
 const STATUS_STYLES: Record<LeadStatus, string> = {
   new: "bg-accent/10 text-accent-strong",
   contacted: "bg-warning/10 text-warning",
-  qualified: "bg-violet-500/10 text-violet-300",
-  nurturing: "bg-cyan-500/10 text-cyan-300",
+  qualified: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  nurturing: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
   converted: "bg-success/10 text-success",
   lost: "bg-line text-faint",
 };

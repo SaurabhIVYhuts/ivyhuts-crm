@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu, Plus } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { AddLeadModal } from "@/components/leads/AddLeadModal";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Avatar } from "@/components/ui/Avatar";
@@ -132,6 +133,7 @@ export function Header({ onMenuClick, role }: { onMenuClick: () => void; role: R
               Add Lead
             </Button>
           )}
+          <ThemeToggle />
           {hasInternalRole && <NotificationBell />}
         </div>
       </header>

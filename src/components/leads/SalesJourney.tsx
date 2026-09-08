@@ -269,7 +269,7 @@ export function SalesJourney({ lead }: { lead: LeadDetail }) {
         {/* Nurturing/Lost are lifecycle states, not journey stages — StatusBadge
             in the header already shows the real status; this is just context
             for why progress looks "stalled" here, not a second status control. */}
-        {lead.status === "nurturing" && <span className="text-xs text-cyan-400">Nurturing — later stages remain open.</span>}
+        {lead.status === "nurturing" && <span className="text-xs text-cyan-700 dark:text-cyan-400">Nurturing — later stages remain open.</span>}
         {isLost && <span className="text-xs text-faint">Lead marked as lost.</span>}
       </div>
 
