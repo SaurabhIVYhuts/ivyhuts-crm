@@ -22,6 +22,24 @@ export interface LeadProperty {
   city: string | null;
 }
 
+// CRM plan item 2 — the agent's own record of an availability check with an
+// accommodation partner. Purely agent-entered; there is no partner-API
+// integration anywhere in the CRM sales workflow.
+export const PARTNER_AVAILABILITY_STATUSES = ["not_requested", "requested", "available", "unavailable", "no_reply"] as const;
+export type PartnerAvailabilityStatus = (typeof PARTNER_AVAILABILITY_STATUSES)[number];
+
+export interface PartnerAvailabilityBlock {
+  status: PartnerAvailabilityStatus;
+  reply: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface PartnerAvailability {
+  amber: PartnerAvailabilityBlock;
+  uhomes: PartnerAvailabilityBlock;
+}
+
 export interface Lead {
   id: string;
   userId: string | null;
@@ -34,6 +52,12 @@ export interface Lead {
   assignedTo: string | null;
   property: LeadProperty;
   notes: string | null;
+  // CRM plan item 2 — a one-line agent status summary shown in the Lead
+  // Inbox. Editable via PATCH /api/leads/:id.
+  summary: string | null;
+  // CRM plan item 2 — present on GET /api/leads/:id (toSafeLead). May be
+  // absent on responses from older backend builds — guard for undefined.
+  partnerAvailability?: PartnerAvailability;
   tags: string[];
   firstContactAt: string | null;
   lastContactAt: string | null;

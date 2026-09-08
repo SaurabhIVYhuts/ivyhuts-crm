@@ -24,6 +24,8 @@ function makeLead(overrides: Partial<WorkQueueLead> = {}): WorkQueueLead {
     nextFollowUp: null,
     nextMeeting: null,
     bucket: "noNextAction" as WorkQueueBucket,
+    summary: null,
+    discovery: null,
     ...overrides,
   };
 }

@@ -71,6 +71,18 @@ export interface WorkQueueNextMeeting {
   scheduledAt: string;
 }
 
+// CRM plan item 2 — display-only requirement fields for the Lead Inbox
+// table, looked up from the lead's Discovery document by
+// api/leads/work-queue.js. Discovery stays the source of truth; this is a
+// read snapshot. null when the lead has no Discovery yet.
+export interface WorkQueueDiscovery {
+  university: string | null;
+  moveInDate: string | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  currency: string | null;
+}
+
 // A purpose-built projection, NOT the full Lead — the backend's $project
 // (api/leads/work-queue.js) omits userId/sourceDetails/convertedAt/lostAt/
 // lostReason/archivedAt to keep the row payload small (Milestone 11 spec
@@ -101,6 +113,10 @@ export interface WorkQueueLead {
   nextFollowUp: WorkQueueNextFollowUp | null;
   nextMeeting: WorkQueueNextMeeting | null;
   bucket: WorkQueueBucket;
+  // CRM plan item 2 — one-line agent status summary + a read snapshot of
+  // the lead's Discovery requirements, for the Lead Inbox columns.
+  summary: string | null;
+  discovery: WorkQueueDiscovery | null;
 }
 
 export interface WorkQueueResponse {

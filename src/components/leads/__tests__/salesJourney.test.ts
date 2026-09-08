@@ -33,6 +33,7 @@ function makeLead(overrides: { status?: LeadDetail["status"]; journey?: Partial<
     assignedTo: null,
     property: { id: null, name: null, city: null },
     notes: null,
+    summary: null,
     tags: [],
     firstContactAt: null,
     lastContactAt: null,

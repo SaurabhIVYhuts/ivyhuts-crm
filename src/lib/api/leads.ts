@@ -9,7 +9,7 @@
 import { apiRequest } from "./client";
 import type { QueryValue } from "./client";
 import type { ApiCollectionResponse, ApiSuccessResponse } from "@/types/api";
-import type { Lead, LeadDetail, LeadStatus, LeadTemperature } from "@/types/lead";
+import type { Lead, LeadDetail, LeadStatus, LeadTemperature, PartnerAvailabilityStatus } from "@/types/lead";
 import type { AssignmentSummary } from "@/types/assignmentSummary";
 import type { WorkQueueResponse, WorkQueueBucket } from "@/types/workQueue";
 
@@ -49,6 +49,15 @@ export interface UpdateLeadPayload {
   temperature?: LeadTemperature;
   notes?: string;
   lostReason?: string;
+  // CRM plan item 2 — one-line agent status summary.
+  summary?: string | null;
+  // CRM plan item 2 — partial: send only the partner block(s) you're
+  // changing, and within a block only status and/or reply. updatedAt /
+  // updatedBy are stamped server-side.
+  partnerAvailability?: {
+    amber?: { status?: PartnerAvailabilityStatus; reply?: string | null };
+    uhomes?: { status?: PartnerAvailabilityStatus; reply?: string | null };
+  };
 }
 
 export function updateLead(id: string, payload: UpdateLeadPayload) {

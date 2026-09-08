@@ -21,6 +21,7 @@ import type { LeadDetail } from "@/types/lead";
 import { StatusBadge } from "@/components/leads/StatusBadge";
 import { LeadStatusControl } from "@/components/leads/LeadStatusControl";
 import { LeadAssignmentControl } from "@/components/leads/LeadAssignmentControl";
+import { PartnerAvailabilityControl } from "@/components/leads/PartnerAvailabilityControl";
 import { SalesJourney } from "@/components/leads/SalesJourney";
 import { MeetingsSection } from "@/components/meetings/MeetingsSection";
 import { DiscoverySection } from "@/components/discovery/DiscoverySection";
@@ -150,6 +151,11 @@ function LeadSidebar({ lead, onUpdated }: { lead: LeadDetail; onUpdated: (update
       <Card>
         <CardHeader title="Assignment" />
         <LeadAssignmentControl lead={lead} onUpdated={onUpdated} />
+      </Card>
+
+      <Card>
+        <CardHeader title="Status & Availability" />
+        <PartnerAvailabilityControl lead={lead} onUpdated={onUpdated} />
       </Card>
 
       <Card>
