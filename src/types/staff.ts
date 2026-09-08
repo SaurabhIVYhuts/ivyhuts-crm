@@ -8,4 +8,7 @@ export interface StaffUser {
   name: string;
   email: string;
   role: Role;
+  // CRM plan item 3 — false = benched (excluded from lead auto-assignment).
+  // Optional here since older backend builds don't send it.
+  active?: boolean;
 }
