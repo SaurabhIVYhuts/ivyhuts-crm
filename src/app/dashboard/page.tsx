@@ -23,13 +23,7 @@ import { Pipeline } from "@/components/dashboard/Pipeline";
 import { LeadAnalytics } from "@/components/dashboard/LeadAnalytics";
 import { AgentWorkloadList } from "@/components/dashboard/AgentWorkloadList";
 import { AddLeadModal } from "@/components/leads/AddLeadModal";
-import {
-  PriorityQueueSection,
-  TodaysFollowUpsCard,
-  MeetingTodayCard,
-  OverdueCard,
-  RecentRepliesCard,
-} from "@/components/dashboard/WorkQueueSections";
+import { PriorityQueueSection, TodayAgendaCard } from "@/components/dashboard/WorkQueueSections";
 import { describeApiError, type ApiErrorState } from "@/lib/utils/errors";
 import { useRouter } from "next/navigation";
 
@@ -138,42 +132,32 @@ export default function DashboardOverviewPage() {
         <p className="text-sm text-subtle">No dashboard data is available for this account&apos;s role.</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-3 gap-3">
             <StatCard label="Overdue" value={summary?.overdue ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=overdue" tone="warning" />
-            <StatCard label="Meeting Today" value={summary?.meetingToday ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=meetingToday" />
             <StatCard label="Follow-up Today" value={summary?.today ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=today" />
             <StatCard label="New" value={summary?.new ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=new" />
-            <StatCard
-              label="Needs Requirements"
-              value={summary?.discoveryIncomplete ?? null}
-              isLoading={isWorkQueueLoading}
-              href="/dashboard/leads?bucket=discoveryIncomplete"
-            />
-            <StatCard
-              label="Ready for Find Rooms"
-              value={summary?.readyForFindRooms ?? null}
-              isLoading={isWorkQueueLoading}
-              href="/dashboard/leads?bucket=readyForFindRooms"
-              tone="success"
-            />
           </div>
-
-          <Pipeline scopeUserId={profile?.id} />
-
-          <LeadAnalytics scopeUserId={profile?.id} />
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <PriorityQueueSection leads={myLeads} isLoading={isWorkQueueLoading} error={workQueueError} onRetry={loadWorkQueue} />
-            <div className="flex flex-col gap-4">
-              <MeetingTodayCard leads={myLeads} isLoading={isWorkQueueLoading} error={workQueueError} onRetry={loadWorkQueue} />
-              <TodaysFollowUpsCard leads={myLeads} isLoading={isWorkQueueLoading} error={workQueueError} onRetry={loadWorkQueue} />
-            </div>
+            <TodayAgendaCard leads={myLeads} isLoading={isWorkQueueLoading} error={workQueueError} onRetry={loadWorkQueue} />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <OverdueCard leads={myLeads} isLoading={isWorkQueueLoading} error={workQueueError} onRetry={loadWorkQueue} />
-            <RecentRepliesCard leads={myLeads} isLoading={isWorkQueueLoading} error={workQueueError} onRetry={loadWorkQueue} />
-          </div>
+          {/* CRM plan item 6 — the pipeline board and trend charts are
+              context, not the day's work; tucked into an opt-in disclosure
+              so the dashboard opens on "what to do now", not a wall of
+              charts. */}
+          <details className="group rounded-xl border border-line bg-surface">
+            <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold text-ink marker:content-none">
+              Insights
+              <span className="text-xs font-normal text-faint group-open:hidden">Show pipeline &amp; analytics</span>
+              <span className="hidden text-xs font-normal text-faint group-open:inline">Hide</span>
+            </summary>
+            <div className="flex flex-col gap-4 border-t border-line p-4">
+              <Pipeline scopeUserId={profile?.id} />
+              <LeadAnalytics scopeUserId={profile?.id} />
+            </div>
+          </details>
 
           {isManagerOrAdmin && (
             <div className="flex flex-col gap-4">

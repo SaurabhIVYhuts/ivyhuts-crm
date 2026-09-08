@@ -9,7 +9,7 @@
 // overdue/today/priority classification itself.
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Phone, MessageCircle, CalendarClock, ArrowRight, Flame, Inbox as InboxIcon, type LucideIcon } from "lucide-react";
+import { Phone, MessageCircle, CalendarClock, ArrowRight, Flame, Video, type LucideIcon } from "lucide-react";
 import type { WorkQueueLead } from "@/types/workQueue";
 import { NextActionCell } from "@/components/leads/LeadsTable";
 import { Avatar } from "@/components/ui/Avatar";
@@ -246,7 +246,29 @@ export function PriorityQueueSection({
   );
 }
 
-export function TodaysFollowUpsCard({
+// One chronological agenda for the day — meetings happening today, follow-
+// ups due today, and overdue follow-ups, all merged and sorted by time.
+// Replaces the former three separate cards (MeetingTodayCard /
+// TodaysFollowUpsCard / OverdueCard, CRM plan item 6): same backend
+// buckets, one list, so an agent reads the day in order instead of
+// re-scanning three boxes of the same data.
+export type AgendaEntry =
+  | { kind: "meeting"; lead: WorkQueueLead; at: string }
+  | { kind: "followup"; lead: WorkQueueLead; at: string; overdue: boolean };
+
+export function deriveTodayAgenda(leads: WorkQueueLead[]): AgendaEntry[] {
+  const entries: AgendaEntry[] = [];
+  for (const lead of leads) {
+    if (lead.bucket === "meetingToday" && lead.nextMeeting) {
+      entries.push({ kind: "meeting", lead, at: lead.nextMeeting.scheduledAt });
+    } else if ((lead.bucket === "today" || lead.bucket === "overdue") && lead.nextFollowUp) {
+      entries.push({ kind: "followup", lead, at: lead.nextFollowUp.dueAt, overdue: lead.bucket === "overdue" });
+    }
+  }
+  return entries.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+}
+
+export function TodayAgendaCard({
   leads,
   isLoading,
   error,
@@ -257,155 +279,38 @@ export function TodaysFollowUpsCard({
   error: ApiErrorState | null;
   onRetry?: () => void;
 }) {
-  const items = leads.filter((l) => l.bucket === "today").slice(0, 5);
+  const entries = deriveTodayAgenda(leads).slice(0, 8);
   return (
     <DashboardCard
-      title="Today's Follow-ups"
+      title="Today"
       icon={CalendarClock}
       viewAllHref="/dashboard/leads?bucket=today"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}
-      isEmpty={items.length === 0}
-      emptyTitle="No follow-ups today."
-      emptyDescription="You're all caught up for today."
+      isEmpty={entries.length === 0}
+      emptyTitle="Nothing scheduled today."
+      emptyDescription="No meetings or follow-ups due — check the Priority Queue for what's next."
     >
       <ul className="flex flex-col divide-y divide-line-soft">
-        {items.map((lead) => (
-          <li key={lead.id}>
-            <Link href={`/dashboard/leads/${lead.id}#follow-ups`} className="flex items-center gap-3 px-2 py-2.5 text-sm hover:bg-surface-hover">
-              <Avatar name={lead.contact.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-ink">{lead.contact.name || "Unnamed lead"}</div>
-                <NextActionCell lead={lead} />
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </DashboardCard>
-  );
-}
-
-// Milestone 23.12 — "Who has a meeting today?" (Part 3) gets its own card,
-// same shell/pattern as TodaysFollowUpsCard, since a same-day meeting is
-// time-sensitive in a way the Priority Queue's 5-item cap can bury.
-export function MeetingTodayCard({
-  leads,
-  isLoading,
-  error,
-  onRetry,
-}: {
-  leads: WorkQueueLead[];
-  isLoading: boolean;
-  error: ApiErrorState | null;
-  onRetry?: () => void;
-}) {
-  const items = leads.filter((l) => l.bucket === "meetingToday").slice(0, 5);
-  return (
-    <DashboardCard
-      title="Meetings Today"
-      icon={CalendarClock}
-      viewAllHref="/dashboard/meetings"
-      isLoading={isLoading}
-      error={error}
-      onRetry={onRetry}
-      isEmpty={items.length === 0}
-      emptyTitle="No meetings scheduled today."
-    >
-      <ul className="flex flex-col divide-y divide-line-soft">
-        {items.map((lead) => (
-          <li key={lead.id}>
-            <Link href={`/dashboard/leads/${lead.id}#meeting`} className="flex items-center gap-3 px-2 py-2.5 text-sm hover:bg-surface-hover">
-              <Avatar name={lead.contact.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-ink">{lead.contact.name || "Unnamed lead"}</div>
-                <div className="text-xs text-subtle">{lead.nextMeeting ? relativeTimeFromNow(lead.nextMeeting.scheduledAt) : "—"}</div>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </DashboardCard>
-  );
-}
-
-export function OverdueCard({
-  leads,
-  isLoading,
-  error,
-  onRetry,
-}: {
-  leads: WorkQueueLead[];
-  isLoading: boolean;
-  error: ApiErrorState | null;
-  onRetry?: () => void;
-}) {
-  const items = leads.filter((l) => l.bucket === "overdue").slice(0, 5);
-  return (
-    <DashboardCard
-      title="Overdue"
-      icon={CalendarClock}
-      viewAllHref="/dashboard/leads?bucket=overdue"
-      isLoading={isLoading}
-      error={error}
-      onRetry={onRetry}
-      isEmpty={items.length === 0}
-      emptyTitle="No overdue work."
-    >
-      <ul className="flex flex-col divide-y divide-line-soft">
-        {items.map((lead) => (
-          <li key={lead.id}>
-            <Link href={`/dashboard/leads/${lead.id}#follow-ups`} className="flex items-center gap-3 px-2 py-2.5 text-sm hover:bg-surface-hover">
-              <Avatar name={lead.contact.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-ink">{lead.contact.name || "Unnamed lead"}</div>
-                <NextActionCell lead={lead} />
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </DashboardCard>
-  );
-}
-
-export function RecentRepliesCard({
-  leads,
-  isLoading,
-  error,
-  onRetry,
-}: {
-  leads: WorkQueueLead[];
-  isLoading: boolean;
-  error: ApiErrorState | null;
-  onRetry?: () => void;
-}) {
-  const items = deriveAwaitingReplies(leads).slice(0, 5);
-  return (
-    <DashboardCard
-      title="Recent Replies"
-      icon={InboxIcon}
-      isLoading={isLoading}
-      error={error}
-      onRetry={onRetry}
-      isEmpty={items.length === 0}
-      emptyTitle="No recent customer replies."
-      emptyDescription="New WhatsApp replies from your leads will show up here."
-    >
-      <ul className="flex flex-col divide-y divide-line-soft">
-        {items.map((lead) => (
-          <li key={lead.id}>
+        {entries.map((entry) => (
+          <li key={`${entry.kind}-${entry.lead.id}`}>
             <Link
-              href={`/dashboard/leads/${lead.id}#communications`}
+              href={`/dashboard/leads/${entry.lead.id}#${entry.kind === "meeting" ? "meeting" : "follow-ups"}`}
               className="flex items-center gap-3 px-2 py-2.5 text-sm hover:bg-surface-hover"
             >
-              <Avatar name={lead.contact.name} size="sm" />
+              <Avatar name={entry.lead.contact.name} size="sm" />
               <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-ink">{lead.contact.name || "Unnamed lead"}</div>
-                <div className="text-xs text-warning">Customer replied · {relativeTimeFromNow(lead.lastInboundCommunicationAt)}</div>
+                <div className="truncate font-medium text-ink">{entry.lead.contact.name || "Unnamed lead"}</div>
+                {entry.kind === "meeting" ? (
+                  <div className="flex items-center gap-1.5 text-xs text-subtle">
+                    <Video className="h-3.5 w-3.5 shrink-0" />
+                    Meeting · {relativeTimeFromNow(entry.at)}
+                  </div>
+                ) : (
+                  <NextActionCell lead={entry.lead} />
+                )}
               </div>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-faint" />
             </Link>
           </li>
         ))}
