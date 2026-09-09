@@ -18,11 +18,16 @@ export function LeadFilters({
   onChange,
   sourceOptions,
   staffOptions,
+  currentUserId,
 }: {
   values: LeadFilterValues;
   onChange: (values: LeadFilterValues) => void;
   sourceOptions: string[];
   staffOptions: StaffUser[];
+  // Powers the "My leads" shortcut in the agent select — it replaced a
+  // separate All / My / Unassigned pill row that set this very same
+  // `assignedTo` filter, so the two could disagree on screen.
+  currentUserId?: string | null;
 }) {
   const hasActiveFilters = values.search || values.status || values.source || values.assignedTo;
 
@@ -55,12 +60,15 @@ export function LeadFilters({
 
       <select value={values.assignedTo} onChange={(e) => onChange({ ...values, assignedTo: e.target.value })} className={selectClass}>
         <option value="">All agents</option>
+        {currentUserId && <option value={currentUserId}>My leads</option>}
         <option value="unassigned">Unassigned</option>
-        {staffOptions.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
-          </option>
-        ))}
+        {staffOptions
+          .filter((s) => s.id !== currentUserId)
+          .map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
       </select>
 
       {hasActiveFilters && (

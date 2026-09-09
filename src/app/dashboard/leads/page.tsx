@@ -278,27 +278,7 @@ function LeadInboxContent() {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {[
-          { label: "All Leads", value: "" },
-          { label: "My Leads", value: profile?.id || "" },
-          { label: "Unassigned", value: "unassigned" },
-        ].map(({ label, value }) => (
-          <button
-            key={label}
-            type="button"
-            disabled={label === "My Leads" && !profile?.id}
-            onClick={() => handleFiltersChange({ ...filters, assignedTo: value })}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
-              filters.assignedTo === value ? "bg-ink text-canvas" : "border border-line text-subtle hover:bg-surface-2 hover:text-ink"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {PRIORITY_PILLS.map(({ label, value }) => (
+        {PRIORITY_PILLS.filter(({ value }) => bucket === value || (summary?.[value] ?? 0) > 0).map(({ label, value }) => (
           <PillButton
             key={value}
             active={bucket === value}
@@ -311,13 +291,13 @@ function LeadInboxContent() {
         ))}
       </div>
 
-      <LeadFilters values={filters} onChange={handleFiltersChange} sourceOptions={sourceOptions} staffOptions={staff} />
+      <LeadFilters values={filters} onChange={handleFiltersChange} sourceOptions={sourceOptions} staffOptions={staff} currentUserId={profile?.id ?? null} />
 
       {error ? (
         <ErrorState error={error} onRetry={reload} />
       ) : (
         <>
-          <LeadsTable leads={leads} isLoading={isLoading} hasActiveFilters={hasActiveFilters} staffById={staffById} />
+          <LeadsTable leads={leads} isLoading={isLoading} hasActiveFilters={hasActiveFilters} staffById={staffById} onDeleted={reload} />
 
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between text-sm text-subtle">

@@ -15,7 +15,7 @@
 // the grid never shows a value the backend didn't accept.
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, MoreHorizontal, SlidersHorizontal, Users } from "lucide-react";
+import { ArrowUpRight, MoreHorizontal, SlidersHorizontal, Trash2, Users } from "lucide-react";
 import type { WorkQueueLead } from "@/types/workQueue";
 import type { StaffUser } from "@/types/staff";
 import {
@@ -24,7 +24,7 @@ import {
   type LeadStatus,
   type PartnerAvailabilityStatus,
 } from "@/types/lead";
-import { updateLead } from "@/lib/api/leads";
+import { deleteLead, updateLead } from "@/lib/api/leads";
 import { saveDiscovery } from "@/lib/api/discovery";
 import { TYPE_ICONS } from "@/components/follow-ups/NextActionCard";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
@@ -86,7 +86,8 @@ type LeadColumnKey =
   | "status"
   | "nextAction"
   | "summary"
-  | "assignedTo";
+  | "assignedTo"
+  | "delete";
 
 // Order here is the on-screen order. Everything the team asked for is on by
 // default; only the two extras (assigned agent) start hidden.
@@ -109,6 +110,7 @@ const COLUMN_ORDER: Array<{ key: LeadColumnKey; label: string; defaultOn: boolea
   { key: "nextAction", label: "Next Step", defaultOn: true },
   { key: "summary", label: "Summary", defaultOn: true },
   { key: "assignedTo", label: "Assigned Agent", defaultOn: false },
+  { key: "delete", label: "Delete", defaultOn: true },
 ];
 
 const STORAGE_KEY = "ivyhuts-crm:leads-columns";
@@ -182,11 +184,14 @@ export function LeadsTable({
   isLoading,
   hasActiveFilters,
   staffById,
+  onDeleted,
 }: {
   leads: WorkQueueLead[];
   isLoading: boolean;
   hasActiveFilters: boolean;
   staffById: Record<string, StaffUser>;
+  // Lets the page refresh its counts after a row is archived.
+  onDeleted?: () => void;
 }) {
   const [visible, setVisible] = useState<Set<LeadColumnKey>>(defaultVisible);
   // A local, editable copy so a saved cell repaints immediately instead of
@@ -506,6 +511,11 @@ export function LeadsTable({
         />
       ),
     },
+    delete: {
+      key: "delete",
+      header: "",
+      render: (lead) => <DeleteCell lead={lead} onDone={() => { setRows((prev) => prev.filter((r) => r.id !== lead.id)); onDeleted?.(); }} />,
+    },
     assignedTo: {
       key: "assignedTo",
       header: "Assigned Agent",
@@ -531,6 +541,7 @@ export function LeadsTable({
         emptyTitle={hasActiveFilters ? "No leads match this filter." : "No leads have been created yet."}
         emptyDescription={hasActiveFilters ? "Try a different quick filter or clear your filters." : "New leads will appear here as they arrive."}
         skeletonRows={8}
+        rowClassName={(lead) => (lead.status === "lost" ? "bg-danger/10 text-danger" : "")}
       />
       <p className="text-xs text-faint">
         Cells save when you tab or click away (Enter commits, Esc cancels). Next Step is derived from the lead&apos;s
@@ -596,5 +607,60 @@ function partnerReplyCell(lead: WorkQueueLead, partner: "amber" | "uhomes", run:
         )
       }
     />
+  );
+}
+
+// Archive (soft-delete) a lead straight from the grid. Two-step confirm
+// rather than a modal — the second click within a few seconds commits.
+// The backend restricts DELETE /api/leads/:id to MARKETING_MANAGER/ADMIN,
+// so an agent simply gets its 403 surfaced here.
+function DeleteCell({ lead, onDone }: { lead: WorkQueueLead; onDone: () => void }) {
+  const [armed, setArmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!armed) return;
+    const handle = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(handle);
+  }, [armed]);
+
+  async function handleClick() {
+    if (!armed) {
+      setArmed(true);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteLead(lead.id);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't delete this lead.");
+      setArmed(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      title={error || (armed ? "Click again to delete" : "Delete lead")}
+      aria-label={armed ? `Confirm delete ${lead.contact.name || "lead"}` : `Delete ${lead.contact.name || "lead"}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 text-xs disabled:opacity-50 ${
+        error
+          ? "text-danger"
+          : armed
+            ? "bg-danger text-white"
+            : "text-faint hover:bg-danger/10 hover:text-danger"
+      }`}
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+      {armed && !busy && "Sure?"}
+      {busy && "…"}
+    </button>
   );
 }

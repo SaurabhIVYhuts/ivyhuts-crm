@@ -28,6 +28,7 @@ export function DataTable<T>({
   emptyTitle,
   emptyDescription,
   skeletonRows = 6,
+  rowClassName,
 }: {
   columns: DataTableColumn<T>[];
   rows: T[];
@@ -38,6 +39,10 @@ export function DataTable<T>({
   emptyTitle: string;
   emptyDescription?: string;
   skeletonRows?: number;
+  // Per-row styling hook — used by the Lead Inbox to tint a lost lead's
+  // whole row, so state reads at a glance rather than only from its status
+  // cell.
+  rowClassName?: (row: T) => string;
 }) {
   if (!isLoading && rows.length === 0) {
     return (
@@ -78,7 +83,7 @@ export function DataTable<T>({
                 <tr
                   key={rowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={onRowClick ? "cursor-pointer transition-colors hover:bg-surface-hover" : ""}
+                  className={`${onRowClick ? "cursor-pointer transition-colors hover:bg-surface-hover" : ""} ${rowClassName?.(row) ?? ""}`}
                 >
                   {columns.map((col) => (
                     <td key={col.key} className={`px-4 py-3 align-middle text-ink ${col.className || ""}`}>

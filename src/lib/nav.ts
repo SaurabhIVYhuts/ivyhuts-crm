@@ -1,24 +1,19 @@
 // Single source of truth for the CRM's navigation — shared by the Sidebar
 // (renders it) and the Header (derives the current page title from it) so
 // the two can never disagree about what a route is called.
-import {
-  LayoutDashboard,
-  Users,
-  UserRound,
-  PhoneCall,
-  CalendarClock,
-  MessageSquare,
-  Users2,
-  BarChart3,
-  FileBarChart,
-  Settings,
-  type LucideIcon,
-} from "lucide-react";
+//
+// Deliberately only the pages that actually exist and get used. The nav
+// used to carry placeholder entries (Customers, Presentations,
+// Communications, Analytics, Reports, Settings) that had no route and
+// rendered as permanently-disabled items — visual noise pretending to be
+// features. Per-lead communications, meetings, rooms and follow-ups all
+// live on the lead's own page, which is where the work actually happens.
+import { LayoutDashboard, Users, PhoneCall, CalendarClock, Users2, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   label: string;
   icon: LucideIcon;
-  href: string | null;
+  href: string;
 }
 
 export interface NavGroup {
@@ -26,41 +21,25 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-// `href: null` means the feature has no dedicated cross-lead page yet in
-// this backend (e.g. there is no "list every communication across every
-// lead" endpoint) — rendered as a clearly, calmly disabled item rather than
-// a route that would 404 or show fabricated data. Real per-lead
-// Communications remain fully available from within a Lead's own detail page.
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Workspace",
     items: [
       { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
       { label: "Leads", icon: Users, href: "/dashboard/leads" },
-      { label: "Customers", icon: UserRound, href: null },
       { label: "Follow-ups", icon: PhoneCall, href: "/dashboard/follow-ups" },
       { label: "Meetings", icon: CalendarClock, href: "/dashboard/meetings" },
-      { label: "Communications", icon: MessageSquare, href: null },
     ],
   },
   {
     label: "Management",
-    items: [
-      { label: "Team", icon: Users2, href: "/dashboard/team" },
-      { label: "Analytics", icon: BarChart3, href: null },
-      { label: "Reports", icon: FileBarChart, href: null },
-    ],
-  },
-  {
-    label: "System",
-    items: [{ label: "Settings", icon: Settings, href: null }],
+    items: [{ label: "Team", icon: Users2, href: "/dashboard/team" }],
   },
 ];
 
 export function findNavLabel(pathname: string): string {
   for (const group of NAV_GROUPS) {
     for (const item of group.items) {
-      if (!item.href) continue;
       if (item.href === "/dashboard" ? pathname === "/dashboard" : pathname === item.href || pathname.startsWith(`${item.href}/`)) {
         return item.label;
       }

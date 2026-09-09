@@ -75,18 +75,6 @@ export function Sidebar({
             )}
             <div className="flex flex-col gap-0.5">
               {group.items.map(({ label, icon: Icon, href }) => {
-                if (!href) {
-                  return (
-                    <div
-                      key={label}
-                      title={collapsed ? `${label} — not yet available` : "Not yet available for this account"}
-                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-faint/70 ${collapsed ? "justify-center" : ""}`}
-                    >
-                      <Icon className="h-4.5 w-4.5 shrink-0" />
-                      {!collapsed && <span className="truncate">{label}</span>}
-                    </div>
-                  );
-                }
                 const active = isActive(pathname, href);
                 return (
                   <Link

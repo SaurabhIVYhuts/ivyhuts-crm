@@ -78,6 +78,14 @@ export function assignLead(id: string, assignedTo: string | null) {
   });
 }
 
+// DELETE /api/leads/:id — a SOFT delete on the backend (it sets
+// archivedAt; marketing data is never actually removed), restricted there
+// to MARKETING_MANAGER / ADMIN. An archived lead drops out of every list
+// query by default.
+export function deleteLead(id: string) {
+  return apiRequest<ApiSuccessResponse<Lead>>(`/api/leads/${id}`, { method: "DELETE" });
+}
+
 export function getAssignmentSummary() {
   return apiRequest<ApiSuccessResponse<AssignmentSummary>>("/api/leads/assignment-summary", {
     method: "GET",
