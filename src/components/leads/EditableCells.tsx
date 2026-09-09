@@ -14,8 +14,12 @@ type CellState = "idle" | "saving" | "error";
 
 // Shared visual language: a borderless input that only reveals its frame
 // on hover/focus, so a dense grid reads as data first and a form second.
+// Deliberately sets NO width — each cell passes its own `widthClass`, and a
+// `w-full` here would collide with it (Tailwind resolves conflicting width
+// utilities by stylesheet order, not by the order they appear in the
+// string, so the narrow budget inputs silently lost).
 const BASE =
-  "w-full rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm text-ink outline-none " +
+  "rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm text-ink outline-none " +
   "hover:border-line focus:border-accent focus:bg-surface disabled:opacity-60";
 
 function stateClass(state: CellState): string {

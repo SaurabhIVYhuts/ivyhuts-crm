@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   History,
-  UserRound,
-  Home,
   MessageCircle,
   Phone,
   Mail,
@@ -32,15 +30,42 @@ import { FollowUpsSection } from "@/components/follow-ups/FollowUpsSection";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { describeApiError, type ApiErrorState } from "@/lib/utils/errors";
 import { formatDate, formatDateTime, formatLabel } from "@/lib/utils/format";
 
+// The page used to stack fifteen blocks in one column. Sections are now
+// grouped into five tabs so an agent sees one job at a time; the Sales
+// Journey and the sidebar stay pinned above/beside them because they're
+// the "where is this lead and what's next" context every tab needs.
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "requirements", label: "Requirements" },
+  { key: "rooms", label: "Rooms" },
+  { key: "meetings", label: "Meetings" },
+  { key: "activity", label: "Activity" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+// Which tab owns each section anchor. The Sales Journey pills and the
+// sidebar's Quick Actions jump by anchor, so they need to reveal the right
+// tab first — scrolling to an element inside a hidden tab does nothing.
+const ANCHOR_TAB: Record<string, TabKey> = {
+  "lead-information": "overview",
+  "follow-ups": "overview",
+  discovery: "requirements",
+  "find-rooms": "rooms",
+  "saved-properties": "rooms",
+  meeting: "meetings",
+  communications: "activity",
+  activity: "activity",
+};
+
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    // scroll-mt accounts for the sticky header when SalesJourney/quick
-    // actions scroll a section into view.
+    // scroll-mt accounts for the sticky header when the Sales Journey or a
+    // quick action scrolls a section into view.
     <section id={id} className="scroll-mt-20">
       <Card>
         <h2 className="mb-3 text-sm font-semibold text-ink">{title}</h2>
@@ -57,8 +82,7 @@ function Section({ title, id, children }: { title: string; id?: string; children
 // — Mongoose's toObject() (used by toSafeLead on the backend) strips empty
 // Mixed-type objects entirely (its default `minimize` behavior), so a lead
 // whose sourceDetails was never populated with real keys serializes
-// without the field at all. Found via real browser QA on a seeded
-// facebook_lead_ads lead — crashed this page before this guard existed.
+// without the field at all.
 function sourceDetailString(sourceDetails: Record<string, unknown> | undefined, key: string): string {
   const value = sourceDetails?.[key];
   return typeof value === "string" && value.trim() ? value : "Not available";
@@ -71,10 +95,6 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
       <dd className="mt-0.5 text-sm text-ink">{value}</dd>
     </div>
   );
-}
-
-function scrollToAnchor(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 interface TimelineEvent {
@@ -109,8 +129,19 @@ function buildTimeline(lead: LeadDetail): TimelineEvent[] {
   return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-function QuickActionButton({ icon: Icon, label, onClick, href }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; href?: string }) {
-  const className = "flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 py-3 text-xs font-medium text-subtle transition-colors hover:border-accent/40 hover:text-ink";
+function QuickActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  href,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+}) {
+  const className =
+    "flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 py-3 text-xs font-medium text-subtle transition-colors hover:border-accent/40 hover:text-ink";
   if (href) {
     return (
       <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className={className}>
@@ -127,20 +158,26 @@ function QuickActionButton({ icon: Icon, label, onClick, href }: { icon: React.C
   );
 }
 
-function LeadSidebar({ lead, onUpdated }: { lead: LeadDetail; onUpdated: (updated: Partial<LeadDetail>) => void }) {
-  const pendingFollowUp = lead.followUps.filter((f) => f.status === "pending").sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] || null;
-
+function LeadSidebar({
+  lead,
+  onUpdated,
+  onJumpTo,
+}: {
+  lead: LeadDetail;
+  onUpdated: (updated: Partial<LeadDetail>) => void;
+  onJumpTo: (anchor: string) => void;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader title="Quick Actions" />
         <div className="grid grid-cols-3 gap-2">
           <QuickActionButton icon={Phone} label="Call" href={lead.contact.phone ? `tel:${lead.contact.phone}` : undefined} />
-          <QuickActionButton icon={MessageCircle} label="WhatsApp" onClick={() => scrollToAnchor("communications")} />
+          <QuickActionButton icon={MessageCircle} label="WhatsApp" onClick={() => onJumpTo("communications")} />
           <QuickActionButton icon={Mail} label="Email" href={lead.contact.email ? `mailto:${lead.contact.email}` : undefined} />
-          <QuickActionButton icon={StickyNote} label="Add Note" onClick={() => scrollToAnchor("communications")} />
-          <QuickActionButton icon={CalendarClock} label="Follow-up" onClick={() => scrollToAnchor("follow-ups")} />
-          <QuickActionButton icon={Video} label="Meeting" onClick={() => scrollToAnchor("meeting")} />
+          <QuickActionButton icon={StickyNote} label="Add Note" onClick={() => onJumpTo("communications")} />
+          <QuickActionButton icon={CalendarClock} label="Follow-up" onClick={() => onJumpTo("follow-ups")} />
+          <QuickActionButton icon={Video} label="Meeting" onClick={() => onJumpTo("meeting")} />
         </div>
       </Card>
 
@@ -155,45 +192,8 @@ function LeadSidebar({ lead, onUpdated }: { lead: LeadDetail; onUpdated: (update
       </Card>
 
       <Card>
-        <CardHeader title="Status & Availability" />
+        <CardHeader title="Summary & Partner Availability" />
         <PartnerAvailabilityControl lead={lead} onUpdated={onUpdated} />
-      </Card>
-
-      <Card>
-        <CardHeader title="Next Follow-up" />
-        {pendingFollowUp ? (
-          <button type="button" onClick={() => scrollToAnchor("follow-ups")} className="block w-full text-left">
-            <div className="text-sm font-medium text-ink">{formatLabel(pendingFollowUp.type)}</div>
-            <div className="mt-0.5 text-xs text-subtle">Due {formatDateTime(pendingFollowUp.dueAt)}</div>
-            {pendingFollowUp.notes && <div className="mt-1 text-xs text-faint">{pendingFollowUp.notes}</div>}
-          </button>
-        ) : (
-          <EmptyState compact icon={CalendarClock} title="No follow-up scheduled." />
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader title="Customer" />
-        {lead.userId ? (
-          <div className="flex items-center gap-2 text-sm text-subtle">
-            <UserRound className="h-4 w-4 text-faint" />
-            Linked account (ID ending {lead.userId.slice(-6)})
-          </div>
-        ) : (
-          <EmptyState compact icon={UserRound} title="No linked customer account." description="May be an anonymous or first-time visitor." />
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader title="Property Interest" />
-        {lead.property.name || lead.property.city || lead.property.id ? (
-          <dl className="grid grid-cols-2 gap-3">
-            <Field label="Property" value={lead.property.name || "—"} />
-            <Field label="City" value={lead.property.city || "—"} />
-          </dl>
-        ) : (
-          <EmptyState compact icon={Home} title="No property information." />
-        )}
       </Card>
     </div>
   );
@@ -205,6 +205,7 @@ export default function LeadDetailPage() {
   const [lead, setLead] = useState<LeadDetail | null>(null);
   const [error, setError] = useState<ApiErrorState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [tab, setTab] = useState<TabKey>("overview");
 
   useEffect(() => {
     let cancelled = false;
@@ -230,6 +231,16 @@ export default function LeadDetailPage() {
     setLead((prev) => (prev ? { ...prev, ...updated } : prev));
   }
 
+  // Reveal the tab that owns the anchor, then scroll to it once React has
+  // painted the newly-visible section.
+  const jumpTo = useCallback((anchor: string) => {
+    const target = ANCHOR_TAB[anchor];
+    if (target) setTab(target);
+    requestAnimationFrame(() => {
+      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
       <Link href="/dashboard/leads" className="flex w-fit items-center gap-1.5 text-sm text-subtle hover:text-ink">
@@ -252,7 +263,11 @@ export default function LeadDetailPage() {
               <Avatar name={lead.contact.name} size="lg" />
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-ink">{lead.contact.name || "Unnamed lead"}</h1>
-                <p className="text-sm text-subtle">Created {formatDate(lead.createdAt)}</p>
+                <p className="text-sm text-subtle">
+                  Arrived {formatDate(lead.createdAt)}
+                  {lead.contact.email ? ` · ${lead.contact.email}` : ""}
+                  {lead.contact.phone ? ` · ${lead.contact.phone}` : ""}
+                </p>
               </div>
             </div>
             <StatusBadge status={lead.status} />
@@ -270,77 +285,114 @@ export default function LeadDetailPage() {
           )}
 
           <Card>
-            <SalesJourney lead={lead} />
+            <SalesJourney lead={lead} onJumpTo={jumpTo} />
           </Card>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
             <div className="flex flex-col gap-4">
-              <Section title="Lead Information" id="lead-information">
-                <dl className="grid grid-cols-2 gap-4">
-                  <Field label="Name" value={lead.contact.name || "—"} />
-                  <Field label="Phone" value={lead.contact.phone || "—"} />
-                  <Field label="Email" value={lead.contact.email || "—"} />
-                  <Field label="Source" value={lead.source ? formatLabel(lead.source) : "—"} />
-                  {/* Milestone 23.12 Part 14 — only for a real Facebook-origin
-                      lead (source === "facebook_lead_ads", set by the Meta
-                      webhook). Each value comes straight from
-                      Lead.sourceDetails — "Not available" when a value
-                      genuinely wasn't provided, never guessed. */}
-                  {lead.source === "facebook_lead_ads" && (
-                    <>
-                      <Field label="Campaign" value={sourceDetailString(lead.sourceDetails, "campaignId")} />
-                      <Field label="Ad" value={sourceDetailString(lead.sourceDetails, "adId")} />
-                      <Field label="Form" value={sourceDetailString(lead.sourceDetails, "formId")} />
-                    </>
-                  )}
-                  <Field label="Temperature" value={formatLabel(lead.temperature)} />
-                  <Field label="Created" value={formatDate(lead.createdAt)} />
-                </dl>
-              </Section>
+              <div role="tablist" aria-label="Lead sections" className="flex flex-wrap gap-1 border-b border-line">
+                {TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    role="tab"
+                    aria-selected={tab === t.key}
+                    type="button"
+                    onClick={() => setTab(t.key)}
+                    className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                      tab === t.key
+                        ? "border-accent text-ink"
+                        : "border-transparent text-subtle hover:border-line hover:text-ink"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
 
-              <Section title="Meeting" id="meeting">
-                <MeetingsSection leadId={lead.id} role={profile?.role ?? null} />
-              </Section>
+              {tab === "overview" && (
+                <>
+                  <Section title="Lead Information" id="lead-information">
+                    <dl className="grid grid-cols-2 gap-4">
+                      <Field label="Name" value={lead.contact.name || "—"} />
+                      <Field label="Phone" value={lead.contact.phone || "—"} />
+                      <Field label="Email" value={lead.contact.email || "—"} />
+                      <Field label="Source" value={lead.source ? formatLabel(lead.source) : "—"} />
+                      <Field label="City" value={lead.property.city || "—"} />
+                      <Field label="Property" value={lead.property.name || "—"} />
+                      <Field label="Temperature" value={formatLabel(lead.temperature)} />
+                      <Field label="Arrived" value={formatDateTime(lead.createdAt)} />
+                      {/* Milestone 23.12 Part 14 — only for a real
+                          Facebook-origin lead (source === "facebook_lead_ads",
+                          set by the Meta webhook). Each value comes straight
+                          from Lead.sourceDetails — "Not available" when a value
+                          genuinely wasn't provided, never guessed. */}
+                      {lead.source === "facebook_lead_ads" && (
+                        <>
+                          <Field label="Campaign" value={sourceDetailString(lead.sourceDetails, "campaignId")} />
+                          <Field label="Ad" value={sourceDetailString(lead.sourceDetails, "adId")} />
+                          <Field label="Form" value={sourceDetailString(lead.sourceDetails, "formId")} />
+                        </>
+                      )}
+                    </dl>
+                  </Section>
 
-              <Section title="Discovery" id="discovery">
-                <DiscoverySection leadId={lead.id} />
-              </Section>
+                  <Section title="Follow-ups" id="follow-ups">
+                    <FollowUpsSection leadId={lead.id} />
+                  </Section>
+                </>
+              )}
 
-              <Section title="Find Rooms" id="find-rooms">
-                <FindRoomsSection leadId={lead.id} />
-              </Section>
+              {tab === "requirements" && (
+                <Section title="Discovery" id="discovery">
+                  <DiscoverySection leadId={lead.id} />
+                </Section>
+              )}
 
-              <Section title="Saved Properties" id="saved-properties">
-                <SavedPropertiesCard leadId={lead.id} />
-              </Section>
+              {tab === "rooms" && (
+                <>
+                  <Section title="Find Rooms" id="find-rooms">
+                    <FindRoomsSection leadId={lead.id} />
+                  </Section>
 
-              <Section title="Communication History" id="communications">
-                <CommunicationsSection leadId={lead.id} phone={lead.contact.phone} leadName={lead.contact.name} />
-              </Section>
+                  <Section title="Saved Properties" id="saved-properties">
+                    <SavedPropertiesCard leadId={lead.id} />
+                  </Section>
+                </>
+              )}
 
-              <Section title="Follow-ups" id="follow-ups">
-                <FollowUpsSection leadId={lead.id} />
-              </Section>
+              {tab === "meetings" && (
+                <Section title="Meetings" id="meeting">
+                  <MeetingsSection leadId={lead.id} role={profile?.role ?? null} />
+                </Section>
+              )}
 
-              <Section title="Activity" id="activity">
-                <ul className="flex flex-col gap-3">
-                  {buildTimeline(lead).map((event, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm">
-                      <History className="mt-0.5 h-4 w-4 shrink-0 text-faint" />
-                      <div>
-                        <div className="text-ink">
-                          {event.label}
-                          {event.detail && <span className="text-subtle"> · {event.detail}</span>}
-                        </div>
-                        <div className="text-xs text-faint">{formatDateTime(event.date)}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </Section>
+              {tab === "activity" && (
+                <>
+                  <Section title="Communication History" id="communications">
+                    <CommunicationsSection leadId={lead.id} phone={lead.contact.phone} leadName={lead.contact.name} />
+                  </Section>
+
+                  <Section title="Timeline" id="activity">
+                    <ul className="flex flex-col gap-3">
+                      {buildTimeline(lead).map((event, i) => (
+                        <li key={i} className="flex items-start gap-3 text-sm">
+                          <History className="mt-0.5 h-4 w-4 shrink-0 text-faint" />
+                          <div>
+                            <div className="text-ink">
+                              {event.label}
+                              {event.detail && <span className="text-subtle"> · {event.detail}</span>}
+                            </div>
+                            <div className="text-xs text-faint">{formatDateTime(event.date)}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
+                </>
+              )}
             </div>
 
-            <LeadSidebar lead={lead} onUpdated={handleUpdated} />
+            <LeadSidebar lead={lead} onUpdated={handleUpdated} onJumpTo={jumpTo} />
           </div>
         </>
       ) : null}

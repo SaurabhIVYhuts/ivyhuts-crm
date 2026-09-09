@@ -201,7 +201,8 @@ export function nextPendingFollowUp(lead: LeadDetail) {
   return lead.followUps.filter((f) => f.status === "pending").sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())[0] || null;
 }
 
-export function NextActionPanel({ lead }: { lead: LeadDetail }) {
+export function NextActionPanel({ lead, onJumpTo }: { lead: LeadDetail; onJumpTo?: (anchor: string) => void }) {
+  const jump = onJumpTo ?? scrollToAnchor;
   const action = deriveNextAction(lead);
   if (!action) {
     return (
@@ -232,7 +233,7 @@ export function NextActionPanel({ lead }: { lead: LeadDetail }) {
             <button
               key={btn.label}
               type="button"
-              onClick={() => scrollToAnchor(btn.anchor)}
+              onClick={() => jump(btn.anchor)}
               className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-strong"
             >
               {btn.label}
@@ -253,7 +254,11 @@ const STATE_STYLES: Record<VisualState, string> = {
   terminated: "text-faint line-through decoration-line",
 };
 
-export function SalesJourney({ lead }: { lead: LeadDetail }) {
+// `onJumpTo` lets the host page reveal the section first (the Lead Detail
+// page keeps its sections in tabs, so a plain scroll would land on a hidden
+// element). Defaults to a plain scroll when the host doesn't need to.
+export function SalesJourney({ lead, onJumpTo }: { lead: LeadDetail; onJumpTo?: (anchor: string) => void }) {
+  const jump = onJumpTo ?? scrollToAnchor;
   const stages = buildStages(lead);
   // A lost Lead won't progress further — later incomplete stages are shown
   // as terminated (visually distinct from "still upcoming"), never as a
@@ -292,7 +297,7 @@ export function SalesJourney({ lead }: { lead: LeadDetail }) {
               <button
                 type="button"
                 disabled={!clickable}
-                onClick={() => stage.anchor && scrollToAnchor(stage.anchor)}
+                onClick={() => stage.anchor && jump(stage.anchor)}
                 title={stage.anchor && clickable ? `Go to ${stage.label}` : undefined}
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATE_STYLES[state]} ${
                   clickable ? "cursor-pointer hover:opacity-80" : "cursor-default"
@@ -316,7 +321,7 @@ export function SalesJourney({ lead }: { lead: LeadDetail }) {
         })}
       </ol>
 
-      <NextActionPanel lead={lead} />
+      <NextActionPanel lead={lead} onJumpTo={onJumpTo} />
     </div>
   );
 }

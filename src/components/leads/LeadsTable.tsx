@@ -29,7 +29,7 @@ import { saveDiscovery } from "@/lib/api/discovery";
 import { TYPE_ICONS } from "@/components/follow-ups/NextActionCard";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { SelectCell, TextCell } from "@/components/leads/EditableCells";
-import { formatTime, formatLabel, relativeDay } from "@/lib/utils/format";
+import { formatDate, formatTime, formatLabel, relativeDay, relativeTimeFromNow } from "@/lib/utils/format";
 
 // Reuses NextActionCard's own overdue rule (dueAt < now, not day-boundary)
 // since this is the same "is this specific follow-up currently overdue"
@@ -71,6 +71,7 @@ function toDateInput(value: string | null | undefined): string {
 type LeadColumnKey =
   | "open"
   | "name"
+  | "created"
   | "phone"
   | "email"
   | "moveIn"
@@ -92,6 +93,7 @@ type LeadColumnKey =
 const COLUMN_ORDER: Array<{ key: LeadColumnKey; label: string; defaultOn: boolean }> = [
   { key: "open", label: "Open", defaultOn: true },
   { key: "name", label: "Name", defaultOn: true },
+  { key: "created", label: "Arrived", defaultOn: true },
   { key: "phone", label: "Number", defaultOn: true },
   { key: "email", label: "Email", defaultOn: true },
   { key: "moveIn", label: "Move-in", defaultOn: true },
@@ -265,7 +267,7 @@ export function LeadsTable({
         <TextCell
           value={lead.contact.name}
           placeholder="Unnamed lead"
-          widthClass="min-w-40"
+          widthClass="w-full min-w-40"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -276,6 +278,16 @@ export function LeadsTable({
         />
       ),
     },
+    created: {
+      key: "created",
+      header: "Arrived",
+      render: (lead) => (
+        <div className="whitespace-nowrap text-xs">
+          <div className="text-ink">{formatDate(lead.createdAt)}</div>
+          <div className="text-faint">{relativeTimeFromNow(lead.createdAt)}</div>
+        </div>
+      ),
+    },
     phone: {
       key: "phone",
       header: "Number",
@@ -284,7 +296,7 @@ export function LeadsTable({
           value={lead.contact.phone}
           type="tel"
           placeholder="—"
-          widthClass="min-w-32"
+          widthClass="w-full min-w-32"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -303,7 +315,7 @@ export function LeadsTable({
           value={lead.contact.email}
           type="email"
           placeholder="—"
-          widthClass="min-w-48"
+          widthClass="w-full min-w-48"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -321,7 +333,7 @@ export function LeadsTable({
         <TextCell
           value={toDateInput(lead.discovery?.moveInDate)}
           type="date"
-          widthClass="min-w-36"
+          widthClass="w-full min-w-36"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -339,7 +351,7 @@ export function LeadsTable({
         <TextCell
           value={toDateInput(lead.discovery?.moveOutDate)}
           type="date"
-          widthClass="min-w-36"
+          widthClass="w-full min-w-36"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -357,7 +369,7 @@ export function LeadsTable({
         <TextCell
           value={lead.property.city}
           placeholder="—"
-          widthClass="min-w-28"
+          widthClass="w-full min-w-28"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -375,7 +387,7 @@ export function LeadsTable({
         <TextCell
           value={lead.discovery?.university ?? null}
           placeholder="—"
-          widthClass="min-w-44"
+          widthClass="w-full min-w-44"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -483,7 +495,7 @@ export function LeadsTable({
         <TextCell
           value={lead.summary}
           placeholder="—"
-          widthClass="min-w-56"
+          widthClass="w-full min-w-56"
           onSave={(raw) =>
             withOptimisticRow(
               lead.id,
@@ -558,7 +570,7 @@ function partnerStatusCell(lead: WorkQueueLead, partner: "amber" | "uhomes", run
       value={partnerBlock(lead, partner).status}
       options={PARTNER_AVAILABILITY_STATUSES}
       labelOf={formatLabel}
-      widthClass="min-w-36"
+      widthClass="w-full min-w-36"
       onSave={(raw) =>
         run(
           lead.id,
@@ -575,7 +587,7 @@ function partnerReplyCell(lead: WorkQueueLead, partner: "amber" | "uhomes", run:
     <TextCell
       value={partnerBlock(lead, partner).reply}
       placeholder="—"
-      widthClass="min-w-48"
+      widthClass="w-full min-w-48"
       onSave={(raw) =>
         run(
           lead.id,
