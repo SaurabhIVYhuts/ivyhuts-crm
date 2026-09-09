@@ -49,6 +49,10 @@ export interface UpdateLeadPayload {
   temperature?: LeadTemperature;
   notes?: string;
   lostReason?: string;
+  // Partial: api/leads/[id].js merges only the sub-keys present, so the
+  // Lead Inbox grid can save one contact/property field at a time.
+  contact?: { name?: string | null; email?: string | null; phone?: string | null };
+  property?: { id?: string | null; name?: string | null; city?: string | null };
   // CRM plan item 2 — one-line agent status summary.
   summary?: string | null;
   // CRM plan item 2 — partial: send only the partner block(s) you're

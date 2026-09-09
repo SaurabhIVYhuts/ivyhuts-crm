@@ -2,7 +2,7 @@
 // (api/leads/work-queue.js, CRM Milestone 11). Field set verified directly
 // against that handler's $project/response-building code — do not add
 // fields here it doesn't actually return.
-import type { LeadContact, LeadProperty, LeadStatus, LeadTemperature } from "./lead";
+import type { LeadContact, LeadProperty, LeadStatus, LeadTemperature, PartnerAvailability } from "./lead";
 import type { FollowUpType, FollowUpPriority } from "./followUp";
 import type { PaginationMeta } from "./api";
 
@@ -78,6 +78,7 @@ export interface WorkQueueNextMeeting {
 export interface WorkQueueDiscovery {
   university: string | null;
   moveInDate: string | null;
+  moveOutDate: string | null;
   budgetMin: number | null;
   budgetMax: number | null;
   currency: string | null;
@@ -117,6 +118,11 @@ export interface WorkQueueLead {
   // the lead's Discovery requirements, for the Lead Inbox columns.
   summary: string | null;
   discovery: WorkQueueDiscovery | null;
+  // CRM plan item 2 — per-partner availability tracking, shown and edited
+  // directly in the Lead Inbox grid. This is the agent's own record of an
+  // availability request and the partner's reply — NOT an accommodation
+  // data source (nothing here ever fetches listings from a partner).
+  partnerAvailability: PartnerAvailability | null;
 }
 
 export interface WorkQueueResponse {

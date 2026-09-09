@@ -48,6 +48,10 @@ export interface DiscoveryAccommodation {
   // — never assume a currency (e.g. GBP) when it's absent.
   currency: string | null;
   moveInDate: string | null;
+  // When the student plans to move out. Independent of
+  // stayDurationMonths — an agent may know one, the other, or both, and
+  // neither is ever derived from the other.
+  moveOutDate: string | null;
   stayDurationMonths: number | null;
   preferredLocation: string | null;
   roomPreference: string | null;

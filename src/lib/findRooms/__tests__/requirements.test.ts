@@ -15,6 +15,7 @@ function makeDiscovery(
       budgetMax: 250,
       currency: "GBP",
       moveInDate: null,
+      moveOutDate: null,
       stayDurationMonths: null,
       preferredLocation: null,
       roomPreference: "2 Sharing",

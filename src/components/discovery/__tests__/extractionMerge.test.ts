@@ -48,6 +48,7 @@ function makeDiscovery(overrides: Partial<Discovery> = {}): Discovery {
       budgetMax: null,
       currency: null,
       moveInDate: null,
+      moveOutDate: null,
       stayDurationMonths: null,
       preferredLocation: null,
       roomPreference: null,
@@ -115,7 +116,7 @@ describe("extractionToPayload — only transcript-supported fields are ever sent
 describe("extractionToFormValues — Review & Edit shows the TRUE effective merge, never a fake blank", () => {
   it("THE BUG THIS FIXES: an already-confirmed budget/sharing is preserved in the pre-filled form when the new transcript only mentions university", () => {
     const discovery = makeDiscovery({
-      accommodation: { budgetMin: 150, budgetMax: 250, currency: "GBP", moveInDate: null, stayDurationMonths: null, preferredLocation: null, roomPreference: null, sharing: 2, distancePreference: null },
+      accommodation: { budgetMin: 150, budgetMax: 250, currency: "GBP", moveInDate: null, moveOutDate: null, stayDurationMonths: null, preferredLocation: null, roomPreference: null, sharing: 2, distancePreference: null },
       requirementSources: { university: "agent", budget: "agent", sharing: "agent" },
     });
     const values = extractionToFormValues(makeExtraction({ university: "UCL" }), discovery);
