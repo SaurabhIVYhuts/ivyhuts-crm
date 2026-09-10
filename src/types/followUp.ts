@@ -15,6 +15,14 @@ export type FollowUpPriority = (typeof FOLLOWUP_PRIORITIES)[number];
 export const FOLLOWUP_STATUSES = ["pending", "completed", "cancelled"] as const;
 export type FollowUpStatus = (typeof FOLLOWUP_STATUSES)[number];
 
+// Who created the task. "system" is the CRM's own first-contact call task,
+// raised when a lead is assigned (api/_lib/firstContactTask.js) — labelled
+// as such in the UI so an agent is never left wondering which colleague
+// scheduled it. Never sent on create: a task this CRM posts is always an
+// agent's.
+export const FOLLOWUP_ORIGINS = ["agent", "system"] as const;
+export type FollowUpOrigin = (typeof FOLLOWUP_ORIGINS)[number];
+
 export interface FollowUp {
   id: string;
   leadId: string;
@@ -24,6 +32,7 @@ export interface FollowUp {
   priority: FollowUpPriority;
   dueAt: string;
   status: FollowUpStatus;
+  origin: FollowUpOrigin;
   notes: string | null;
   completedAt: string | null;
   createdAt: string;

@@ -15,6 +15,7 @@ function makeFollowUp(overrides: Partial<FollowUp> = {}): FollowUp {
     priority: "medium",
     dueAt: "2026-01-01T10:00:00.000Z",
     status: "pending",
+    origin: "agent",
     notes: null,
     completedAt: null,
     createdAt: "2026-01-01T00:00:00.000Z",

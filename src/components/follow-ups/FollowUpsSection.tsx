@@ -70,8 +70,16 @@ function FollowUpRow({
  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-faint" />
  <div className="min-w-0 flex-1">
  <div className="flex flex-wrap items-center justify-between gap-2">
- <span className="font-medium text-ink dark:text-ink">
+ <span className="flex items-center gap-1.5 font-medium text-ink dark:text-ink">
               {formatLabel(followUp.type)} · {formatLabel(followUp.priority)} priority
+              {followUp.origin === "system" && (
+                <span
+                  title="Created automatically by the CRM when this lead was assigned"
+                  className="rounded border border-line px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-faint"
+                >
+                  Auto
+                </span>
+              )}
             </span>
  <span className="text-xs text-subtle dark:text-faint">
               {formatDate(followUp.dueAt)} · {formatTime(followUp.dueAt)}
