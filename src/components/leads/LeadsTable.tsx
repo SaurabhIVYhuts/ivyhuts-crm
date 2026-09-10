@@ -11,9 +11,12 @@
 //                                     partner availability
 //   PUT   /api/leads/:id/discovery  — university, move-in / departure,
 //                                     budget (a partial upsert-merge)
+//   PATCH /api/leads/:id/assignment — assigned agent (assignedTo is
+//                                     immutable on the PATCH above, so it
+//                                     has its own endpoint)
 // The row is updated optimistically and reverted if the request fails, so
 // the grid never shows a value the backend didn't accept.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, MoreHorizontal, SlidersHorizontal, Trash2, Users } from "lucide-react";
 import type { WorkQueueLead } from "@/types/workQueue";
@@ -24,7 +27,7 @@ import {
   type LeadStatus,
   type PartnerAvailabilityStatus,
 } from "@/types/lead";
-import { deleteLead, updateLead } from "@/lib/api/leads";
+import { assignLead, deleteLead, updateLead } from "@/lib/api/leads";
 import { saveDiscovery } from "@/lib/api/discovery";
 import { TYPE_ICONS } from "@/components/follow-ups/NextActionCard";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
@@ -89,11 +92,12 @@ type LeadColumnKey =
   | "assignedTo"
   | "delete";
 
-// Order here is the on-screen order. Everything the team asked for is on by
-// default; only the two extras (assigned agent) start hidden.
+// Order here is the on-screen order. Every column is on by default — the
+// menu is there to take things away, not to go hunting for them.
 const COLUMN_ORDER: Array<{ key: LeadColumnKey; label: string; defaultOn: boolean }> = [
   { key: "open", label: "Open", defaultOn: true },
   { key: "name", label: "Name", defaultOn: true },
+  { key: "assignedTo", label: "Assigned To", defaultOn: true },
   { key: "created", label: "Arrived", defaultOn: true },
   { key: "phone", label: "Number", defaultOn: true },
   { key: "email", label: "Email", defaultOn: true },
@@ -109,11 +113,13 @@ const COLUMN_ORDER: Array<{ key: LeadColumnKey; label: string; defaultOn: boolea
   { key: "status", label: "Status", defaultOn: true },
   { key: "nextAction", label: "Next Step", defaultOn: true },
   { key: "summary", label: "Summary", defaultOn: true },
-  { key: "assignedTo", label: "Assigned Agent", defaultOn: false },
   { key: "delete", label: "Delete", defaultOn: true },
 ];
 
-const STORAGE_KEY = "ivyhuts-crm:leads-columns";
+// Versioned: a stored set from before the Assigned To column existed would
+// silently hide it forever (a stored set is used verbatim, not merged with
+// the defaults), so adding a default-on column resets everyone's choice once.
+const STORAGE_KEY = "ivyhuts-crm:leads-columns:v2";
 
 function readStoredColumns(): Set<LeadColumnKey> | null {
   try {
@@ -250,6 +256,15 @@ export function LeadsTable({
       throw err;
     }
   }
+
+  // "" first so Unassigned is the top option, then staff by name. The
+  // backend re-verifies the target is a real internal user, so a stale
+  // staff list here can never make a bad assignment stick.
+  const staffOptions = useMemo(
+    () => ["", ...Object.values(staffById).sort((a, b) => a.name.localeCompare(b.name)).map((s) => s.id)],
+    [staffById]
+  );
+  const agentLabel = (id: string) => (id === "" ? "Unassigned" : staffById[id]?.name || `Agent #${id.slice(-6)}`);
 
   const allColumns: Record<LeadColumnKey, DataTableColumn<WorkQueueLead>> = {
     open: {
@@ -518,12 +533,30 @@ export function LeadsTable({
     },
     assignedTo: {
       key: "assignedTo",
-      header: "Assigned Agent",
-      render: (lead) => (
-        <span className="whitespace-nowrap text-subtle">
-          {lead.assignedTo ? staffById[lead.assignedTo]?.name || `Agent #${lead.assignedTo.slice(-6)}` : "Unassigned"}
-        </span>
-      ),
+      header: "Assigned To",
+      render: (lead) => {
+        const current = lead.assignedTo ?? "";
+        // An assignee missing from the staff list (they left the team, or
+        // the list simply failed to load) still has to be a real option —
+        // otherwise the select renders blank and the next edit looks like
+        // an accidental unassign.
+        const options = current && !staffOptions.includes(current) ? [...staffOptions, current] : staffOptions;
+        return (
+          <SelectCell<string>
+            value={current}
+            options={options}
+            labelOf={agentLabel}
+            widthClass="w-full min-w-36"
+            onSave={(raw) =>
+              withOptimisticRow(
+                lead.id,
+                (r) => ({ ...r, assignedTo: raw || null }),
+                () => assignLead(lead.id, raw || null)
+              )
+            }
+          />
+        );
+      },
     },
   };
 
