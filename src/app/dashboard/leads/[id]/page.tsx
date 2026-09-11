@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, History, MessageCircle } from "lucide-react";
+import { leadListFor } from "@/components/leads/LeadListView";
 import { getLead } from "@/lib/api/leads";
 import { useAuth } from "@/hooks/useAuth";
 import type { LeadDetail } from "@/types/lead";
@@ -127,11 +128,14 @@ export default function LeadDetailPage() {
     setLead((prev) => (prev ? { ...prev, ...updated } : prev));
   }
 
+  const backTo = leadListFor(lead?.status ?? "new");
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-      <Link href="/dashboard/leads" className="flex w-fit items-center gap-1.5 text-sm text-subtle hover:text-ink">
+      {/* "Back" goes to the list that owns this lead's status. */}
+      <Link href={backTo.href} className="flex w-fit items-center gap-1.5 text-sm text-subtle hover:text-ink">
         <ArrowLeft className="h-4 w-4" />
-        Back to leads
+        Back to {backTo.title.toLowerCase()}
       </Link>
 
       {isLoading ? (

@@ -9,8 +9,8 @@
 // "Completed" tab exists here for the same reason: no cross-lead endpoint
 // can honestly populate one, and inventing a permanently-empty tab would
 // be worse than not having it.
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PhoneCall } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getWorkQueue } from "@/lib/api/leads";
@@ -30,14 +30,20 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "upcoming", label: "Upcoming" },
 ];
 
+function isTab(value: string | null): value is Tab {
+  return TABS.some((t) => t.id === value);
+}
+
 interface Row {
   lead: WorkQueueLead;
 }
 
-export default function FollowUpsPage() {
+function FollowUpsContent() {
   const router = useRouter();
   const { profile } = useAuth();
-  const [tab, setTab] = useState<Tab>("overdue");
+  // The Dashboard's Overdue / Today tiles deep-link here with ?tab=.
+  const tabParam = useSearchParams().get("tab");
+  const [tab, setTab] = useState<Tab>(isTab(tabParam) ? tabParam : "overdue");
   const [leads, setLeads] = useState<WorkQueueLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiErrorState | null>(null);
@@ -132,5 +138,16 @@ export default function FollowUpsPage() {
         />
       )}
     </div>
+  );
+}
+
+// useSearchParams (the ?tab= deep link) needs a Suspense boundary — see
+// node_modules/next/dist/docs/01-app/03-api-reference/04-functions/
+// use-search-params.md's "Prerendering" section.
+export default function FollowUpsPage() {
+  return (
+    <Suspense fallback={null}>
+      <FollowUpsContent />
+    </Suspense>
   );
 }

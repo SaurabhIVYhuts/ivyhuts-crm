@@ -29,6 +29,7 @@ export function DataTable<T>({
   emptyDescription,
   skeletonRows = 6,
   rowClassName,
+  fit = false,
 }: {
   columns: DataTableColumn<T>[];
   rows: T[];
@@ -43,6 +44,13 @@ export function DataTable<T>({
   // whole row, so state reads at a glance rather than only from its status
   // cell.
   rowClassName?: (row: T) => string;
+  // Fit-to-width mode (the Lead Inbox): a fixed-layout table that can never
+  // grow wider than its container — column `width`s become shares of the
+  // page, a long value clips inside its own cell instead of stretching the
+  // table, headers may wrap, and padding tightens so dense, stacked cells
+  // still read. The default keeps the natural-width, horizontally
+  // scrollable table every other list page uses.
+  fit?: boolean;
 }) {
   if (!isLoading && rows.length === 0) {
     return (
@@ -53,15 +61,19 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-      <table className="w-full min-w-max text-left text-sm">
+    <div className={`${fit ? "overflow-hidden" : "overflow-x-auto"} rounded-xl border border-line bg-surface`}>
+      <table className={`w-full text-left text-sm ${fit ? "table-fixed" : "min-w-max"}`}>
         <thead>
           <tr className="border-b border-line">
             {columns.map((col) => (
               <th
                 key={col.key}
                 style={col.width ? { width: col.width } : undefined}
-                className="whitespace-nowrap px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-faint"
+                className={
+                  fit
+                    ? "px-2 py-2.5 align-bottom text-xs font-medium uppercase leading-tight tracking-wide text-faint"
+                    : "whitespace-nowrap px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-faint"
+                }
               >
                 {col.header}
               </th>
@@ -73,7 +85,7 @@ export function DataTable<T>({
             ? Array.from({ length: skeletonRows }).map((_, i) => (
                 <tr key={i}>
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
+                    <td key={col.key} className={fit ? "px-2 py-3" : "px-4 py-3"}>
                       <Skeleton className="h-4 w-full max-w-32" />
                     </td>
                   ))}
@@ -86,7 +98,10 @@ export function DataTable<T>({
                   className={`${onRowClick ? "cursor-pointer transition-colors hover:bg-surface-hover" : ""} ${rowClassName?.(row) ?? ""}`}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-4 py-3 align-middle text-ink ${col.className || ""}`}>
+                    <td
+                      key={col.key}
+                      className={`${fit ? "overflow-hidden px-2 py-2.5 align-top" : "px-4 py-3 align-middle"} text-ink ${col.className || ""}`}
+                    >
                       {col.render(row)}
                     </td>
                   ))}

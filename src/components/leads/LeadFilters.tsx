@@ -1,4 +1,4 @@
-import { LEAD_STATUSES } from "@/types/lead";
+import { LEAD_STATUSES, type LeadStatus } from "@/types/lead";
 import type { StaffUser } from "@/types/staff";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { formatLabel } from "@/lib/utils/format";
@@ -19,6 +19,7 @@ export function LeadFilters({
   sourceOptions,
   staffOptions,
   currentUserId,
+  statusOptions = LEAD_STATUSES,
 }: {
   values: LeadFilterValues;
   onChange: (values: LeadFilterValues) => void;
@@ -28,6 +29,9 @@ export function LeadFilters({
   // separate All / My / Unassigned pill row that set this very same
   // `assignedTo` filter, so the two could disagree on screen.
   currentUserId?: string | null;
+  // The statuses this page can hold. Leads shows New only, so a status
+  // picker there would be a one-option select — it's hidden below 2.
+  statusOptions?: readonly LeadStatus[];
 }) {
   const hasActiveFilters = values.search || values.status || values.source || values.assignedTo;
 
@@ -40,14 +44,16 @@ export function LeadFilters({
         className="w-64"
       />
 
-      <select value={values.status} onChange={(e) => onChange({ ...values, status: e.target.value })} className={selectClass}>
-        <option value="">All statuses</option>
-        {LEAD_STATUSES.map((status) => (
-          <option key={status} value={status}>
-            {formatLabel(status)}
-          </option>
-        ))}
-      </select>
+      {statusOptions.length > 1 && (
+        <select value={values.status} onChange={(e) => onChange({ ...values, status: e.target.value })} className={selectClass}>
+          <option value="">All statuses</option>
+          {statusOptions.map((status) => (
+            <option key={status} value={status}>
+              {formatLabel(status)}
+            </option>
+          ))}
+        </select>
+      )}
 
       <select value={values.source} onChange={(e) => onChange({ ...values, source: e.target.value })} className={selectClass}>
         <option value="">All sources</option>

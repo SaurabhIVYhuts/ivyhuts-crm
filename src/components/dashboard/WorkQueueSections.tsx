@@ -284,7 +284,7 @@ export function TodayAgendaCard({
     <DashboardCard
       title="Today"
       icon={CalendarClock}
-      viewAllHref="/dashboard/leads?bucket=today"
+      viewAllHref="/dashboard/follow-ups?tab=today"
       isLoading={isLoading}
       error={error}
       onRetry={onRetry}

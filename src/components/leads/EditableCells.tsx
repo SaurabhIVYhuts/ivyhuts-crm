@@ -6,7 +6,7 @@
 // update + revert. Text/number/date cells commit on blur or Enter (never
 // per keystroke — that would be a request per character); selects commit
 // immediately on change.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 export type SaveFn = (raw: string) => Promise<void>;
 
@@ -19,8 +19,23 @@ type CellState = "idle" | "saving" | "error";
 // utilities by stylesheet order, not by the order they appear in the
 // string, so the narrow budget inputs silently lost).
 const BASE =
-  "rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm text-ink outline-none " +
+  "rounded-md border border-transparent bg-transparent text-ink outline-none " +
   "hover:border-line focus:border-accent focus:bg-surface disabled:opacity-60";
+
+// Text size and vertical padding travel together. "dense" (13px) is for
+// the Lead Inbox's fit-to-width grid, where a dozen editable columns share
+// the page; "sm" is everything else.
+export type CellSize = "sm" | "dense";
+const SIZE: Record<CellSize, string> = {
+  sm: "px-1.5 py-1 text-sm",
+  dense: "px-1.5 py-1 text-[13px]",
+};
+
+// Number inputs reserve room for spinner arrows even while the arrows are
+// hidden, which in a narrow grid cell left only a digit or two visible.
+// Every number here is typed anyway, so the arrows go.
+const NO_SPINNER =
+  "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 function stateClass(state: CellState): string {
   if (state === "saving") return "opacity-60";
@@ -35,6 +50,8 @@ export function TextCell({
   type = "text",
   title,
   widthClass = "min-w-32",
+  size = "sm",
+  multiline = false,
 }: {
   value: string | null;
   onSave: SaveFn;
@@ -42,6 +59,11 @@ export function TextCell({
   type?: "text" | "date" | "number" | "email" | "tel";
   title?: string;
   widthClass?: string;
+  size?: CellSize;
+  // A wrapping two-line textarea instead of an input, for longer free text
+  // (the Lead Inbox summary) in a narrow column. Enter still commits — the
+  // text only wraps; it isn't meant to hold line breaks.
+  multiline?: boolean;
 }) {
   const committed = value ?? "";
   const [draft, setDraft] = useState(committed);
@@ -52,6 +74,10 @@ export function TextCell({
   // user is actively typing is never clobbered mid-edit.
   const lastCommitted = useRef(committed);
   const focused = useRef(false);
+  // Set by Escape so the blur it triggers doesn't save. The blur handler
+  // runs synchronously, before React applies the reverted draft, so without
+  // this it committed the very edit Escape was meant to throw away.
+  const cancelling = useRef(false);
 
   useEffect(() => {
     if (committed !== lastCommitted.current) {
@@ -75,6 +101,50 @@ export function TextCell({
     }
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.blur();
+    }
+    if (e.key === "Escape") {
+      cancelling.current = true;
+      setDraft(committed);
+      setState("idle");
+      e.currentTarget.blur();
+    }
+  }
+
+  function handleFocus() {
+    focused.current = true;
+  }
+
+  function handleBlur() {
+    focused.current = false;
+    if (cancelling.current) {
+      cancelling.current = false;
+      return;
+    }
+    commit();
+  }
+
+  const className = `${BASE} ${SIZE[size]} ${widthClass} ${stateClass(state)}`;
+
+  if (multiline) {
+    return (
+      <textarea
+        rows={2}
+        value={draft}
+        placeholder={placeholder}
+        title={errorText || title}
+        disabled={state === "saving"}
+        onFocus={handleFocus}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className={`${className} resize-none leading-snug`}
+      />
+    );
+  }
   return (
     <input
       type={type}
@@ -82,23 +152,11 @@ export function TextCell({
       placeholder={placeholder}
       title={errorText || title}
       disabled={state === "saving"}
-      onFocus={() => {
-        focused.current = true;
-      }}
+      onFocus={handleFocus}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        focused.current = false;
-        commit();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-        if (e.key === "Escape") {
-          setDraft(committed);
-          setState("idle");
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      className={`${BASE} ${widthClass} ${stateClass(state)}`}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className={type === "number" ? `${className} ${NO_SPINNER}` : className}
     />
   );
 }
@@ -109,12 +167,16 @@ export function SelectCell<T extends string>({
   labelOf,
   onSave,
   widthClass = "min-w-28",
+  size = "sm",
+  title,
 }: {
   value: T;
   options: readonly T[];
   labelOf: (option: T) => string;
   onSave: SaveFn;
   widthClass?: string;
+  size?: CellSize;
+  title?: string;
 }) {
   const [state, setState] = useState<CellState>("idle");
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -135,10 +197,10 @@ export function SelectCell<T extends string>({
   return (
     <select
       value={value}
-      title={errorText || undefined}
+      title={errorText || title}
       disabled={state === "saving"}
       onChange={(e) => commit(e.target.value)}
-      className={`${BASE} ${widthClass} ${stateClass(state)}`}
+      className={`${BASE} ${SIZE[size]} ${widthClass} ${stateClass(state)}`}
     >
       {options.map((option) => (
         <option key={option} value={option}>

@@ -132,9 +132,13 @@ export default function DashboardOverviewPage() {
         <p className="text-sm text-subtle">No dashboard data is available for this account&apos;s role.</p>
       ) : (
         <>
+          {/* Overdue / Today count follow-ups across ALL of this agent's
+              leads, new and contacted alike — and the Lead Inbox now holds
+              New leads only — so those two open the Follow-ups page, which
+              covers the same leads. "New" still belongs to the inbox. */}
           <div className="grid grid-cols-3 gap-3">
-            <StatCard label="Overdue" value={summary?.overdue ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=overdue" tone="warning" />
-            <StatCard label="Follow-up Today" value={summary?.today ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=today" />
+            <StatCard label="Overdue" value={summary?.overdue ?? null} isLoading={isWorkQueueLoading} href="/dashboard/follow-ups?tab=overdue" tone="warning" />
+            <StatCard label="Follow-up Today" value={summary?.today ?? null} isLoading={isWorkQueueLoading} href="/dashboard/follow-ups?tab=today" />
             <StatCard label="New" value={summary?.new ?? null} isLoading={isWorkQueueLoading} href="/dashboard/leads?bucket=new" />
           </div>
 

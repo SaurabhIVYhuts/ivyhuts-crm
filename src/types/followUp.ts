@@ -53,4 +53,10 @@ export interface CreateFollowUpInput {
 export interface UpdateFollowUpInput {
   status?: FollowUpStatus;
   notes?: string | null;
+  // Reschedule / retype — the Lead Inbox's editable Next Step. The PATCH
+  // route has always accepted these; they just weren't typed here. A new
+  // dueAt also re-arms the reminder email server-side.
+  type?: FollowUpType;
+  priority?: FollowUpPriority;
+  dueAt?: string;
 }

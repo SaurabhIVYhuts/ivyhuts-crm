@@ -97,7 +97,10 @@ export interface WorkQueueParams {
   page?: number;
   limit?: number;
   search?: string;
-  status?: LeadStatus;
+  // One LeadStatus, or several comma-separated ("contacted,qualified") —
+  // Good Leads asks for four statuses in one request.
+  // Each entry is validated server-side; one bad entry is a 400.
+  status?: string;
   source?: string;
   // Same convention as ListLeadsParams.assignedTo — a real Mongo user id,
   // or the reserved string "unassigned".

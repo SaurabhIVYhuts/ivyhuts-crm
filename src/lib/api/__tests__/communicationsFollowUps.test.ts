@@ -61,6 +61,8 @@ describe("STRUCTURAL: no Amber anywhere in the Communication/Follow-up/Journey w
     "types/workQueue.ts",
     "app/dashboard/page.tsx",
     "app/dashboard/leads/page.tsx",
+    "app/dashboard/good-leads/page.tsx",
+    "components/leads/LeadListView.tsx",
   ];
   it.each(files)("%s has no Amber reference outside Tailwind amber-* classes", (relPath) => {
     expect(AMBER_REFERENCE.test(read(relPath))).toBe(false);
