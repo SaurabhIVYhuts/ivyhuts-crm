@@ -2,7 +2,7 @@
 // (api/leads/work-queue.js, CRM Milestone 11). Field set verified directly
 // against that handler's $project/response-building code — do not add
 // fields here it doesn't actually return.
-import type { LeadContact, LeadProperty, LeadStatus, LeadTemperature, PartnerAvailability } from "./lead";
+import type { LeadContact, LeadProperty, LeadRating, LeadStatus, LeadTemperature, PartnerAvailability } from "./lead";
 import type { FollowUpType, FollowUpPriority } from "./followUp";
 import type { PaginationMeta } from "./api";
 
@@ -93,6 +93,7 @@ export interface WorkQueueLead {
   id: string;
   contact: LeadContact;
   status: LeadStatus;
+  rating: LeadRating | null;
   temperature: LeadTemperature;
   score: number;
   source: string | null;

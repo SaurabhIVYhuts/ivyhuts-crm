@@ -128,11 +128,11 @@ export default function LeadDetailPage() {
     setLead((prev) => (prev ? { ...prev, ...updated } : prev));
   }
 
-  const backTo = leadListFor(lead?.status ?? "new");
+  const backTo = leadListFor(lead?.rating);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-      {/* "Back" goes to the list that owns this lead's status. */}
+      {/* "Back" goes to the list that owns this lead's rating. */}
       <Link href={backTo.href} className="flex w-fit items-center gap-1.5 text-sm text-subtle hover:text-ink">
         <ArrowLeft className="h-4 w-4" />
         Back to {backTo.title.toLowerCase()}

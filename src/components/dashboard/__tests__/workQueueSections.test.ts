@@ -9,6 +9,7 @@ function makeLead(overrides: Partial<WorkQueueLead> = {}): WorkQueueLead {
     id: overrides.id ?? "lead1",
     contact: { name: "Test Student", email: null, phone: null },
     status: "contacted",
+    rating: null,
     temperature: "cold",
     score: 0,
     source: null,

@@ -9,7 +9,7 @@
 import { apiRequest } from "./client";
 import type { QueryValue } from "./client";
 import type { ApiCollectionResponse, ApiSuccessResponse } from "@/types/api";
-import type { Lead, LeadDetail, LeadStatus, LeadTemperature, PartnerAvailabilityStatus } from "@/types/lead";
+import type { Lead, LeadDetail, LeadRating, LeadStatus, LeadTemperature, PartnerAvailabilityStatus } from "@/types/lead";
 import type { AssignmentSummary } from "@/types/assignmentSummary";
 import type { WorkQueueResponse, WorkQueueBucket } from "@/types/workQueue";
 
@@ -46,6 +46,8 @@ export function getLead(id: string) {
 // immutable there and are not exposed here either.
 export interface UpdateLeadPayload {
   status?: LeadStatus;
+  // null clears the rating, sending the lead back to the unrated Leads page.
+  rating?: LeadRating | null;
   temperature?: LeadTemperature;
   notes?: string;
   lostReason?: string;
@@ -101,6 +103,8 @@ export interface WorkQueueParams {
   // Good Leads asks for four statuses in one request.
   // Each entry is validated server-side; one bad entry is a 400.
   status?: string;
+  // One LeadRating, or "none" for unrated leads — each rating is its own page.
+  rating?: LeadRating | "none";
   source?: string;
   // Same convention as ListLeadsParams.assignedTo — a real Mongo user id,
   // or the reserved string "unassigned".

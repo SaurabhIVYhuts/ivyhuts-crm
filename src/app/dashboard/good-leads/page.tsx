@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { LeadListView } from "@/components/leads/LeadListView";
 
-// Good Leads — contacted, qualified, nurturing and converted leads. Same
-// grid as the Lead Inbox (/dashboard/leads); a lead arrives here when its
-// status moves past New, and goes back to Leads if it's marked Lost.
+// Good Leads — leads an agent rated Good. Same grid as the Lead Inbox
+// (/dashboard/leads); changing the rating moves the lead to that rating's
+// page, and "Not rated" sends it back to Leads.
 //
 // Suspense for LeadListView's useSearchParams — see the inbox page.
 export default function GoodLeadsPage() {

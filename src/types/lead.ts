@@ -10,6 +10,12 @@ export const LEAD_STATUSES = ["new", "contacted", "qualified", "nurturing", "con
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 export type LeadTemperature = "cold" | "warm" | "hot";
 
+// The agent's own judgement of a lead, separate from its pipeline status.
+// null = not rated yet. Each rating has its own page (see LeadListView).
+// Mirrors LEAD_RATINGS in the backend's Lead.js.
+export const LEAD_RATINGS = ["good", "bad", "perfect"] as const;
+export type LeadRating = (typeof LEAD_RATINGS)[number];
+
 export interface LeadContact {
   name: string | null;
   email: string | null;
@@ -45,6 +51,7 @@ export interface Lead {
   userId: string | null;
   contact: LeadContact;
   status: LeadStatus;
+  rating: LeadRating | null;
   temperature: LeadTemperature;
   score: number;
   source: string | null;

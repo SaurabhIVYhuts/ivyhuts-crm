@@ -26,18 +26,20 @@
 // share a column (a lead's number and email, a budget's range and
 // currency, a partner's status and reply); everything else gets its own.
 //
-// The same grid renders Leads (New and Lost) and Good Leads (being
-// worked). `belongs` tells it which rows are its own, so a status change
-// that moves a lead to the other page takes the row off this one the
-// moment the backend accepts it.
+// The same grid renders Leads (unrated) and the Good, Bad and Perfect Leads
+// pages. `belongs` tells it which rows are its own, so a rating change that
+// moves a lead to another page takes the row off this one the moment the
+// backend accepts it.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, MoreHorizontal, Plus, SlidersHorizontal, Users } from "lucide-react";
 import type { WorkQueueLead, WorkQueueNextFollowUp } from "@/types/workQueue";
 import type { StaffUser } from "@/types/staff";
 import {
+  LEAD_RATINGS,
   LEAD_STATUSES,
   PARTNER_AVAILABILITY_STATUSES,
+  type LeadRating,
   type LeadStatus,
   type PartnerAvailabilityStatus,
 } from "@/types/lead";
@@ -117,6 +119,7 @@ type LeadColumnKey =
   | "uhomes"
   | "status"
   | "agent"
+  | "rating"
   | "next"
   | "summary";
 
@@ -125,23 +128,27 @@ type LeadColumnKey =
 // never grow wider than the page; hiding a column hands its share to the
 // rest proportionally.
 const COLUMN_ORDER: Array<{ key: LeadColumnKey; label: string; width: string }> = [
-  { key: "lead", label: "Lead", width: "9.5%" },
-  { key: "contact", label: "Contact", width: "11%" },
+  { key: "lead", label: "Lead", width: "8.5%" },
+  { key: "contact", label: "Contact", width: "10%" },
   { key: "moveIn", label: "Move-in", width: "8.5%" },
   { key: "city", label: "City", width: "6%" },
   { key: "university", label: "University", width: "8%" },
-  { key: "budget", label: "Budget", width: "12%" },
-  { key: "amber", label: "Amber", width: "8%" },
-  { key: "uhomes", label: "uHomes", width: "8%" },
+  { key: "budget", label: "Budget", width: "11%" },
+  { key: "amber", label: "Amber", width: "7%" },
+  { key: "uhomes", label: "uHomes", width: "7%" },
   { key: "status", label: "Status", width: "7%" },
   { key: "agent", label: "Agent", width: "7%" },
+  { key: "rating", label: "Rating", width: "6%" },
   { key: "next", label: "Next Step", width: "7%" },
-  { key: "summary", label: "Summary", width: "8%" },
+  { key: "summary", label: "Summary", width: "7%" },
 ];
 
-// Versioned: v4 split the "a / b" columns and dropped departure, so a
-// stored v3 set names keys that no longer exist.
-const STORAGE_KEY = "ivyhuts-crm:leads-columns:v4";
+// Versioned: v5 added Rating, which a stored v4 set would leave hidden.
+const STORAGE_KEY = "ivyhuts-crm:leads-columns:v5";
+
+// "" = not rated: the lead stays on Leads.
+const RATING_OPTIONS: Array<LeadRating | ""> = ["", ...LEAD_RATINGS];
+const ratingLabel = (r: LeadRating | "") => (r ? `${formatLabel(r)} lead` : "Not rated");
 
 function readStoredColumns(): Set<LeadColumnKey> | null {
   try {
@@ -382,7 +389,7 @@ export function LeadsTable({
   isLoading: boolean;
   hasActiveFilters: boolean;
   staffById: Record<string, StaffUser>;
-  // Which rows this page owns. After a successful status save, a row that
+  // Which rows this page owns. After a successful rating save, a row that
   // no longer belongs is removed and reported through onMoved, so the page
   // can say where it went and refresh its counts.
   belongs?: (lead: WorkQueueLead) => boolean;
@@ -669,20 +676,13 @@ export function LeadsTable({
           size="dense"
           title="Status"
           widthClass={FULL}
-          onSave={async (raw) => {
+          onSave={(raw) => {
             const status = raw as LeadStatus;
-            await withOptimisticRow(
+            return withOptimisticRow(
               lead.id,
               (r) => ({ ...r, status }),
               () => updateLead(lead.id, { status })
             );
-            // Saved — if the new status belongs to the other page (Leads
-            // <-> Good Leads), the row leaves this one.
-            const moved = { ...lead, status };
-            if (belongs && !belongs(moved)) {
-              setRows((prev) => prev.filter((r) => r.id !== lead.id));
-              onMoved?.(moved);
-            }
           }}
         />
       ),
@@ -715,6 +715,35 @@ export function LeadsTable({
           />
         );
       },
+    },
+    rating: {
+      key: "rating",
+      header: "Rating",
+      render: (lead) => (
+        <SelectCell<LeadRating | "">
+          value={lead.rating ?? ""}
+          options={RATING_OPTIONS}
+          labelOf={ratingLabel}
+          size="dense"
+          title="Rating — moves the lead to its rating's page"
+          widthClass={FULL}
+          onSave={async (raw) => {
+            const rating = (raw || null) as LeadRating | null;
+            await withOptimisticRow(
+              lead.id,
+              (r) => ({ ...r, rating }),
+              () => updateLead(lead.id, { rating })
+            );
+            // Saved — a rating that belongs to another page (Leads, Good,
+            // Bad or Perfect Leads) takes the row off this one.
+            const moved = { ...lead, rating };
+            if (belongs && !belongs(moved)) {
+              setRows((prev) => prev.filter((r) => r.id !== lead.id));
+              onMoved?.(moved);
+            }
+          }}
+        />
+      ),
     },
     next: {
       key: "next",
@@ -771,8 +800,8 @@ export function LeadsTable({
       />
       <p className="text-xs text-faint">
         Cells save when you tab or click away (Enter commits, Esc cancels). Hover a cell to see its full text. Click
-        Next Step to set or reschedule it. Moving a lead to Contacted or beyond sends it to Good Leads; New and Lost
-        leads stay on Leads.
+        Next Step to set or reschedule it. Rating a lead Good, Bad or Perfect moves it to that page; set it back to Not
+        rated to return it to Leads.
       </p>
     </div>
   );

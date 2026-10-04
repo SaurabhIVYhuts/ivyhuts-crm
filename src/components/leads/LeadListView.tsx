@@ -1,14 +1,14 @@
 "use client";
 
-// One view, two pages. The sales pipeline is split by status:
-//   Leads       /dashboard/leads       — New (waiting for first contact)
-//                                        and Lost, shown in red. The inbox.
-//   Good Leads  /dashboard/good-leads  — contacted, qualified, nurturing,
-//                                        converted: the leads worth working.
-// Lost leads stay on Leads by design — they never count as good leads.
-// Both render this same grid, filters and priority pills, scoped by a
-// status list the backend's work-queue accepts comma-separated. Changing a
-// lead's status moves it to whichever page owns the new status: the grid
+// One view, four pages. Leads are split by the agent's rating:
+//   Leads          /dashboard/leads          — not rated yet. The inbox.
+//   Good Leads     /dashboard/good-leads     — rated Good.
+//   Bad Leads      /dashboard/bad-leads      — rated Bad.
+//   Perfect Leads  /dashboard/perfect-leads  — rated Perfect.
+// Status (new, contacted, … lost) is independent of the rating, so every
+// page shows every status, lost rows in red. All four render this same
+// grid, filters and priority pills, scoped by the work-queue's `rating`
+// param. Changing a lead's rating moves it to that rating's page: the grid
 // drops the row the moment the save succeeds (see LeadsTable's `belongs`)
 // and this view refreshes so the counts follow.
 import { useEffect, useMemo, useState } from "react";
@@ -20,7 +20,7 @@ import { listStaff } from "@/lib/api/staff";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/Toast";
 import type { StaffUser } from "@/types/staff";
-import type { LeadStatus } from "@/types/lead";
+import type { LeadRating } from "@/types/lead";
 import { WORK_QUEUE_BUCKETS, type WorkQueueLead, type WorkQueueSummary, type WorkQueueBucket } from "@/types/workQueue";
 import { LeadFilters, type LeadFilterValues } from "@/components/leads/LeadFilters";
 import { LeadsTable } from "@/components/leads/LeadsTable";
@@ -32,13 +32,14 @@ import { describeApiError, type ApiErrorState } from "@/lib/utils/errors";
 import { relativeTimeFromNow } from "@/lib/utils/format";
 import type { PaginationMeta } from "@/types/api";
 
-export type LeadListScope = "inbox" | "good";
+export type LeadListScope = "inbox" | LeadRating;
 
 interface ScopeConfig {
   title: string;
   href: string;
   description: string;
-  statuses: readonly LeadStatus[];
+  // The rating this page holds; null = unrated (the inbox).
+  rating: LeadRating | null;
   emptyTitle: string;
   emptyDescription: string;
   // Adding a lead and the sheet sync only ever produce New leads, so their
@@ -46,33 +47,51 @@ interface ScopeConfig {
   canCreate: boolean;
 }
 
-// Every status belongs to exactly one page.
+// Every rating (and "not rated") belongs to exactly one page.
 const SCOPES: Record<LeadListScope, ScopeConfig> = {
   inbox: {
     title: "Leads",
     href: "/dashboard/leads",
-    description: "New leads waiting for first contact, plus lost leads in red. Move a lead to Contacted or beyond and it goes to Good Leads.",
-    statuses: ["new", "lost"],
-    emptyTitle: "No new leads waiting.",
-    emptyDescription: "New leads appear here as they arrive, and move to Good Leads once you've reached out.",
+    description: "Leads you haven't rated yet. Rate one Good, Bad or Perfect and it moves to that page.",
+    rating: null,
+    emptyTitle: "No unrated leads.",
+    emptyDescription: "New leads appear here as they arrive, and move to their rating's page once you rate them.",
     canCreate: true,
   },
   good: {
     title: "Good Leads",
     href: "/dashboard/good-leads",
-    description: "Leads you've reached out to — contacted, qualified, nurturing and converted. Mark one Lost and it goes back to Leads.",
-    statuses: ["contacted", "qualified", "nurturing", "converted"],
+    description: "Leads rated Good. Change the rating to move one to another page, or set it to Not rated to send it back to Leads.",
+    rating: "good",
     emptyTitle: "No good leads yet.",
-    emptyDescription: "A lead lands here as soon as its status moves past New.",
+    emptyDescription: "A lead lands here when you rate it Good.",
+    canCreate: false,
+  },
+  bad: {
+    title: "Bad Leads",
+    href: "/dashboard/bad-leads",
+    description: "Leads rated Bad. Change the rating to move one to another page, or set it to Not rated to send it back to Leads.",
+    rating: "bad",
+    emptyTitle: "No bad leads.",
+    emptyDescription: "A lead lands here when you rate it Bad.",
+    canCreate: false,
+  },
+  perfect: {
+    title: "Perfect Leads",
+    href: "/dashboard/perfect-leads",
+    description: "Leads rated Perfect. Change the rating to move one to another page, or set it to Not rated to send it back to Leads.",
+    rating: "perfect",
+    emptyTitle: "No perfect leads yet.",
+    emptyDescription: "A lead lands here when you rate it Perfect.",
     canCreate: false,
   },
 };
 
-// The page a lead with this status lives on — also where the lead page's
+// The page a lead with this rating lives on — also where the lead page's
 // "back" link goes.
-export function leadListFor(status: LeadStatus): { title: string; href: string } {
-  const scope = (Object.keys(SCOPES) as LeadListScope[]).find((key) => SCOPES[key].statuses.includes(status)) ?? "inbox";
-  return { title: SCOPES[scope].title, href: SCOPES[scope].href };
+export function leadListFor(rating: LeadRating | null | undefined): { title: string; href: string } {
+  const scope = SCOPES[rating ?? "inbox"];
+  return { title: scope.title, href: scope.href };
 }
 
 const PAGE_SIZE = 25;
@@ -106,7 +125,7 @@ function writeStoredLastSynced(iso: string) {
 // "contacted" AND "overdue" at the same time. Order matches
 // BUCKET_SORT_RANK in api/leads/work-queue.js exactly. A pill only shows
 // when its bucket has leads in this page's scope, so "New" never appears
-// on Good Leads and "Nurturing" never on the inbox.
+// on a page where no lead is new.
 const PRIORITY_PILLS: Array<{ label: string; value: WorkQueueBucket }> = [
   { label: "Overdue", value: "overdue" },
   { label: "Meeting Today", value: "meetingToday" },
@@ -136,15 +155,15 @@ function useInitialFilters(): { bucket: WorkQueueBucket | ""; assignedTo: string
   };
 }
 
-// The one work-queue query both the initial load and a manual reload send.
-// `status` is this page's own status set, narrowed to one status when the
-// status filter picks one of them.
-function buildQuery(page: number, filters: LeadFilterValues, bucket: WorkQueueBucket | "", status: string) {
+// The one work-queue query both the initial load and a manual reload send,
+// scoped to this page's rating ("none" = unrated).
+function buildQuery(page: number, filters: LeadFilterValues, bucket: WorkQueueBucket | "", rating: LeadRating | "none") {
   return {
     page,
     limit: PAGE_SIZE,
     search: filters.search || undefined,
-    status,
+    status: filters.status || undefined,
+    rating,
     source: filters.source || undefined,
     assignedTo: filters.assignedTo || undefined,
     bucket: bucket || undefined,
@@ -198,8 +217,7 @@ export function LeadListView({ scope }: { scope: LeadListScope }) {
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const staffById = useMemo(() => Object.fromEntries(staff.map((s) => [s.id, s])) as Record<string, StaffUser>, [staff]);
 
-  const statusParam =
-    filters.status && (config.statuses as readonly string[]).includes(filters.status) ? filters.status : config.statuses.join(",");
+  const ratingParam = config.rating ?? "none";
 
   useEffect(() => {
     listLeads({ limit: 100 })
@@ -234,7 +252,7 @@ export function LeadListView({ scope }: { scope: LeadListScope }) {
   function reload() {
     setIsLoading(true);
     setError(null);
-    getWorkQueue(buildQuery(page, filters, bucket, statusParam))
+    getWorkQueue(buildQuery(page, filters, bucket, ratingParam))
       .then((res) => {
         setLeads(res.data.leads);
         setSummary(res.data.summary);
@@ -284,7 +302,7 @@ export function LeadListView({ scope }: { scope: LeadListScope }) {
       () => {
         setIsLoading(true);
         setError(null);
-        getWorkQueue(buildQuery(page, filters, bucket, statusParam))
+        getWorkQueue(buildQuery(page, filters, bucket, ratingParam))
           .then((res) => {
             if (cancelled) return;
             setLeads(res.data.leads);
@@ -304,7 +322,7 @@ export function LeadListView({ scope }: { scope: LeadListScope }) {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [page, filters, bucket, statusParam]);
+  }, [page, filters, bucket, ratingParam]);
 
   const hasActiveFilters = useMemo(
     () => Boolean(filters.search || filters.status || filters.source || filters.assignedTo || bucket),
@@ -359,7 +377,6 @@ export function LeadListView({ scope }: { scope: LeadListScope }) {
         sourceOptions={sourceOptions}
         staffOptions={staff}
         currentUserId={profile?.id ?? null}
-        statusOptions={config.statuses}
       />
 
       {error ? (
@@ -371,9 +388,9 @@ export function LeadListView({ scope }: { scope: LeadListScope }) {
             isLoading={isLoading}
             hasActiveFilters={hasActiveFilters}
             staffById={staffById}
-            belongs={(lead) => config.statuses.includes(lead.status)}
+            belongs={(lead) => (lead.rating ?? null) === config.rating}
             onMoved={(lead) => {
-              show(`Lead moved to ${leadListFor(lead.status).title}.`);
+              show(`Lead moved to ${leadListFor(lead.rating).title}.`);
               reload();
             }}
             emptyTitle={config.emptyTitle}

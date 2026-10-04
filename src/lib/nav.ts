@@ -8,7 +8,7 @@
 // rendered as permanently-disabled items — visual noise pretending to be
 // features. Per-lead communications, meetings, rooms and follow-ups all
 // live on the lead's own page, which is where the work actually happens.
-import { LayoutDashboard, Users, UserCheck, PhoneCall, CalendarClock, Users2, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, UserX, Star, PhoneCall, CalendarClock, Users2, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   label: string;
@@ -26,10 +26,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Workspace",
     items: [
       { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-      // The pipeline is split by status (see LeadListView): Leads holds
-      // New and Lost, Good Leads the ones being worked.
+      // Leads are split by rating (see LeadListView): Leads holds the
+      // unrated ones, and each rating has its own page.
       { label: "Leads", icon: Users, href: "/dashboard/leads" },
+      { label: "Perfect Leads", icon: Star, href: "/dashboard/perfect-leads" },
       { label: "Good Leads", icon: UserCheck, href: "/dashboard/good-leads" },
+      { label: "Bad Leads", icon: UserX, href: "/dashboard/bad-leads" },
       { label: "Follow-ups", icon: PhoneCall, href: "/dashboard/follow-ups" },
       { label: "Meetings", icon: CalendarClock, href: "/dashboard/meetings" },
     ],

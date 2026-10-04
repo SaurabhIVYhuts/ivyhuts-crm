@@ -26,6 +26,7 @@ function makeLead(overrides: { status?: LeadDetail["status"]; journey?: Partial<
     userId: null,
     contact: { name: "Test Student", email: null, phone: null },
     status: overrides.status ?? "new",
+    rating: null,
     temperature: "cold",
     score: 0,
     source: null,
